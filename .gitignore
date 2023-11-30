@@ -1,0 +1,3 @@
+.vscode
+modules/.phpunit.result.cache
+sftp.json

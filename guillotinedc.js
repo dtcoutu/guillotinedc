@@ -18,12 +18,15 @@
 define([
     "dojo","dojo/_base/declare",
     "ebg/core/gamegui",
-    "ebg/counter"
+    "ebg/counter",
+    "ebg/stock"
 ],
 function (dojo, declare) {
     return declare("bgagame.guillotinedc", ebg.core.gamegui, {
         constructor: function(){
             console.log('guillotinedc constructor');
+            this.cardwidth = 72;
+            this.cardheight = 96;
               
             // Here, you can init the global variables of your user interface
             // Example:
@@ -57,8 +60,31 @@ function (dojo, declare) {
             }
             
             // TODO: Set up your game interface here, according to "gamedatas"
-            
- 
+
+            this.playerHand = new ebg.stock();
+            this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
+            this.playerHand.image_items_per_row = 13;
+            this.playerHand.setSelectionMode(1);
+
+            // dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+
+            // Create card types
+            for (var suit = 1; suit <= 4; suit++) {
+                for (var value = 7; value <= 14; value++) {
+                    var card_type_id = this.getCardUniqueId(suit, value);
+                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
+                }
+            }
+
+            // Cards in player hand
+            for (var i in this.gamedatas.hand) {
+                var card = this.gamedatas.hand[i];
+                var suit = card.type;
+                var value = card.type_arg;
+                console.log("suit: " + suit + "; value: " + value);
+                this.playerHand.addToStockWithId(this.getCardUniqueId(suit, value), card.id);
+            }
+
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
@@ -157,7 +183,10 @@ function (dojo, declare) {
             script.
         
         */
-
+        getCardUniqueId: function(suit, value) {
+            return (suit - 1) * 13 + (value - 2);
+        },
+    
 
         ///////////////////////////////////////////////////
         //// Player's action
@@ -223,6 +252,8 @@ function (dojo, declare) {
         setupNotifications: function()
         {
             console.log( 'notifications subscriptions setup' );
+
+            dojo.subscribe('newHand', this, "notif_newHand");
             
             // TODO: here, associate your game notifications with local methods
             
@@ -236,7 +267,19 @@ function (dojo, declare) {
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
             // 
         },  
-        
+
+        notif_newHand : function(notif) {
+            // We received a new full hand of 8 cards.
+            this.playerHand.removeAll();
+
+            for ( var i in notif.args.cards) {
+                var card = notif.args.cards[i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+        },
+
         // TODO: from this point and below, you can write your game notifications handling methods
         
         /*

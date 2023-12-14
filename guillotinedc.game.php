@@ -39,7 +39,10 @@ class guillotinedc extends Table
             //    "my_first_game_variant" => 100,
             //    "my_second_game_variant" => 101,
             //      ...
-        ) );        
+        ) );
+
+        $this->cards = self::getNew("module.common.deck");
+        $this->cards->init("card");
 	}
 	
     protected function getGameName( )
@@ -81,7 +84,16 @@ class guillotinedc extends Table
 
         // Init global values with their initial values
         //self::setGameStateInitialValue( 'my_first_global_variable', 0 );
-        
+
+        $cards = [];
+        foreach ($this->suits as $suit_id => $suit) {
+            for ($value=7; $value<=14; $value++) { // only cards 7 and up
+                $cards[] = ['type' => $suit_id, 'type_arg' => $value, 'nbr' => 1];
+            }
+        }
+
+        $this->cards->createCards($cards, 'deck');
+
         // Init game statistics
         // (note: statistics used in this file must be defined in your stats.inc.php file)
         //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
@@ -115,6 +127,7 @@ class guillotinedc extends Table
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb( $sql );
+        $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
   
         // TODO: Gather all information about current game situation (visible by player $current_player_id).
   
@@ -233,6 +246,22 @@ class guillotinedc extends Table
         $this->gamestate->nextState( 'some_gamestate_transition' );
     }    
     */
+    function stNewHand() {
+        // TODO: increament hand count stat
+
+        // TODO: Gather all cards to the deck
+
+        $this->cards->shuffle('deck');
+        // Deal 8 cards to each player
+        $players = self::loadPlayersBasicInfos();
+        foreach ( $players as $player_id => $player ) {
+            $cards = $this->cards->pickCards(8, 'deck', $player_id);
+            // Notify player about his cards
+            self::notifyPlayer($player_id, 'newHand', '', ['cards' => $cards]);
+        }
+
+        $this->gamestate->nextState("selectGame");
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Zombie

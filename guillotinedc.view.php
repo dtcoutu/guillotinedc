@@ -42,6 +42,7 @@ class view_guillotinedc_guillotinedc extends game_view
 
         /*********** Place your code below:  ************/
 
+        $this->tpl['MY_HAND'] = self::_("My hand");
 
         /*
         

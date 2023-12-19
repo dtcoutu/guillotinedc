@@ -66,8 +66,6 @@ function (dojo, declare) {
             this.playerHand.image_items_per_row = 13;
             this.playerHand.setSelectionMode(1);
 
-            // dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
-
             // Create card types
             for (var suit = 1; suit <= 4; suit++) {
                 for (var value = 7; value <= 14; value++) {
@@ -77,13 +75,7 @@ function (dojo, declare) {
             }
 
             // Cards in player hand
-            for (var i in this.gamedatas.hand) {
-                var card = this.gamedatas.hand[i];
-                var suit = card.type;
-                var value = card.type_arg;
-                console.log("suit: " + suit + "; value: " + value);
-                this.playerHand.addToStockWithId(this.getCardUniqueId(suit, value), card.id);
-            }
+            this.displayHand(this.gamedatas.hand);
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
@@ -187,6 +179,14 @@ function (dojo, declare) {
             return (suit - 1) * 13 + (value - 2);
         },
     
+        displayHand: function(cards) {
+            for (var i in cards) {
+                var card = cards[i];
+                var suit = card.type;
+                var value = card.type_arg;
+                this.playerHand.addToStockWithId(this.getCardUniqueId(suit, value), card.id);
+            }
+        },
 
         ///////////////////////////////////////////////////
         //// Player's action
@@ -253,7 +253,7 @@ function (dojo, declare) {
         {
             console.log( 'notifications subscriptions setup' );
 
-            dojo.subscribe('newHand', this, "notif_newHand");
+            // dojo.subscribe('newHand', this, "notif_newHand");
             
             // TODO: here, associate your game notifications with local methods
             

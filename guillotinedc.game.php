@@ -254,9 +254,9 @@ class guillotinedc extends Table
         $this->cards->shuffle('deck');
         // Deal 8 cards to each player
         $players = self::loadPlayersBasicInfos();
-        foreach ( $players as $player_id => $player ) {
+        foreach ($players as $player_id => $player) {
             $cards = $this->cards->pickCards(8, 'deck', $player_id);
-            // Notify player about his cards
+            // Notify player about their cards
             self::notifyPlayer($player_id, 'newHand', '', ['cards' => $cards]);
         }
 

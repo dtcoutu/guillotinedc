@@ -63,6 +63,16 @@
     
     */
 
+    public function gameSelection() {
+      self::setAjaxMode();
+
+      $selected_game = self::getArg("selected_game", AT_alphanum, true);
+
+      $this->game->gameSelection($selected_game);
+
+      self::ajaxResponse();
+    }
+
   }
   
 

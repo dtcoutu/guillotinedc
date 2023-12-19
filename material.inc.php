@@ -19,7 +19,7 @@
  *
  */
 
- $this->suits = [
+$this->suits = [
   1 => ['name' => clienttranslate('spade'),
         'nametr' => self::_('spade')],
   2 => ['name' => clienttranslate('heart'),
@@ -27,9 +27,8 @@
   3 => ['name' => clienttranslate('club'),
         'nametr' => self::_('club')],
   4 => ['name' => clienttranslate('diamond'),
-        'nametr' => self::_('diamon')],
- ];
-
+        'nametr' => self::_('diamond')],
+];
 
 $this->values_label = [
   7 => '7',

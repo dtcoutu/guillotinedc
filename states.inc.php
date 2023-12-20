@@ -77,7 +77,8 @@ $machinestates = [
         "description" => clienttranslate('${actplayer} must select the game to play'),
         "descriptionmyturn" => clienttranslate('${you} must select the game to play'),
         "type" => "activeplayer",
-        "possibleactions" => ["selectGame"],
+        "args" => "argSelectGame",
+        "possibleactions" => ["gameSelection"],
         "transitions" => []
     ],
    

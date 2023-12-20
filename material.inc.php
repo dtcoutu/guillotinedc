@@ -40,3 +40,30 @@ $this->values_label = [
   13 => clienttranslate('K'),
   14 => clienttranslate('A')
 ];
+
+$this->games = [
+  'parliament' => [
+      'id' => 1,
+      'name' => clienttranslate('Parliament')
+  ],
+  'spades' => [
+      'id' => 2,
+      'name' => clienttranslate('Spades')
+  ],
+  'queens' => [
+      'id' => 3,
+      'name' => clienttranslate('Queens')
+  ],
+  'royalty' => [
+      'id' => 4,
+      'name' => clienttranslate('Royalty')
+  ],
+  'dominoes' => [
+      'id' => 5,
+      'name' => clienttranslate('Dominoes')
+  ],
+  'guillotine' => [
+      'id' => 6,
+      'name' => clienttranslate('Guillotine')
+  ],
+];

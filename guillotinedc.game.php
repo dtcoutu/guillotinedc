@@ -18,6 +18,7 @@
 
 
 require_once( APP_GAMEMODULE_PATH.'module/table/table.game.php' );
+require_once('modules/constants.inc.php');
 
 
 class guillotinedc extends Table
@@ -32,14 +33,9 @@ class guillotinedc extends Table
         // Note: afterwards, you can get/set the global variables with getGameStateValue/setGameStateInitialValue/setGameStateValue
         parent::__construct();
         
-        self::initGameStateLabels( array( 
-            //    "my_first_global_variable" => 10,
-            //    "my_second_global_variable" => 11,
-            //      ...
-            //    "my_first_game_variant" => 100,
-            //    "my_second_game_variant" => 101,
-            //      ...
-        ) );
+        self::initGameStateLabels([
+            SELECTED_GAME => 10,
+        ]);
 
         $this->cards = self::getNew("module.common.deck");
         $this->cards->init("card");
@@ -83,7 +79,6 @@ class guillotinedc extends Table
         /************ Start the game initialization *****/
 
         // Init global values with their initial values
-        //self::setGameStateInitialValue( 'my_first_global_variable', 0 );
 
         $cards = [];
         foreach ($this->suits as $suit_id => $suit) {
@@ -196,6 +191,19 @@ class guillotinedc extends Table
     }
     
     */
+    function gameSelection($selected_game) {
+        self::checkAction("gameSelection");
+
+        $game_id = $this->games[$selected_game]['id'];
+        self::setGameStateValue(SELECTED_GAME, $game_id);
+
+        $game_name = $this->games[$selected_game]['name'];
+        self::notifyAllPlayers('gameSelection', clienttranslate('${player_name} selects ${game_name} as the game to play'), [
+            'i18n' => ['game_name'],
+            'player_name' => self::getActivePlayerName(),
+            'game_name' => $game_name,
+        ]);
+    }
 
     
 //////////////////////////////////////////////////////////////////////////////
@@ -224,6 +232,17 @@ class guillotinedc extends Table
         );
     }    
     */
+
+    function argSelectGame() {
+        // TODO: Need to check what games haven't been played by the current player
+        $available_games = [];
+        foreach ($this->games as $game_type => $game) {
+            $available_games[] = ['type' => $game_type, 'name' => $game['name']];
+        }
+        return [
+            "available_games" => $available_games
+        ];
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state actions
@@ -259,6 +278,8 @@ class guillotinedc extends Table
             // Notify player about their cards
             self::notifyPlayer($player_id, 'newHand', '', ['cards' => $cards]);
         }
+
+        self::setGameStateValue(SELECTED_GAME, 0);
 
         $this->gamestate->nextState("selectGame");
     }

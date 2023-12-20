@@ -150,21 +150,15 @@ function (dojo, declare) {
             {            
                 switch( stateName )
                 {
-/*               
-                 Example:
- 
-                 case 'myGameState':
-                    
-                    // Add 3 action buttons in the action status bar:
-                    
-                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' ); 
-                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' ); 
-                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
-                    break;
-*/
+                    case 'gameSelection':
+                        // TODO: Apparently this is no good as translations won't work with variables. Though I'd like to test this.
+                        args.available_games?.forEach(game => {
+                            this.addActionButton(game.type, _(game.name), () => this.onGameSelection(game.type))
+                        });
+                        break;
                 }
             }
-        },        
+        },
 
         ///////////////////////////////////////////////////
         //// Utility methods
@@ -235,6 +229,15 @@ function (dojo, declare) {
         },        
         
         */
+        onGameSelection: function(game_type) {
+            const action = "gameSelection";
+            if (!this.checkAction(action)) return;
+
+            this.ajaxcall(
+                "/" + this.game_name + "/" + this.game_name + "/" + action + ".html",
+                {lock: true, selected_game: game_type}, this, function (result) {}, function (is_error) {}
+            );
+        },
 
         
         ///////////////////////////////////////////////////

@@ -24,6 +24,14 @@
     
     Please REMOVE this comment before publishing your game on BGA
 -->
+<div id="playertables">
+    <!-- BEGIN player -->
+    <div class="playertable whiteblock playertable_{DIR}">
+        <div class="playertablename" style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</div>
+        <div class="playertablecard" id="playertablecard_{PLAYER_ID}"></div>
+    </div>
+    <!-- END player -->
+</div>
 
 <div id="myhand_wrap" class="whiteblock">
     <h3>{MY_HAND}</h3>
@@ -34,12 +42,7 @@
 <script type="text/javascript">
 
 // Javascript HTML templates
-
-/*
-// Example:
-var jstpl_some_game_item='<div class="my_game_item" id="my_game_item_${MY_ITEM_ID}"></div>';
-
-*/
+var jstpl_card = '<div class="card cardontable" id="cardontable_${player_id}" style="background-position:-${x}px -${y}px"></div>';
 
 </script>  
 

@@ -79,6 +79,41 @@ $machinestates = [
         "type" => "activeplayer",
         "args" => "argSelectGame",
         "possibleactions" => ["gameSelection"],
+        "transitions" => ["startHand" => 20]
+    ],
+
+    20 => [
+        "name" => "newTrick",
+        "description" => "",
+        "type" => "game",
+        "action" => "stNewTrick",
+        "transitions" => ["playerTurn" => 21]
+    ],
+
+    21 => [
+        "name" => "playerTurn",
+        "description" => clienttranslate('${actplayer} must play a card'),
+        "descriptionmyturn" => clienttranslate('${you} must play a card'),
+        "type" => "activeplayer",
+        "args" => "argPlayerTurn",
+        "possibleactions" => ["playCard"],
+        "transitions" => ["cardPlayed" => 22]
+    ],
+
+    22 => [
+        "name" => "nextPlayer",
+        "description" => "",
+        "type" => "game",
+        "action" => "stNextPlayer",
+        "updateGameProgression" => true,
+        "transitions" => ["nextPlayer" => 21, "nextTrick" => 20, "endHand" => 30]
+    ],
+
+    30 => [
+        "name" => "endHand",
+        "description" => "",
+        "type" => "game",
+        "action" => "stEndHand",
         "transitions" => []
     ],
    

@@ -77,6 +77,15 @@ function (dojo, declare) {
             // Cards in player hand
             this.displayHand(this.gamedatas.hand);
 
+            // Cards played on table
+            for (let i in gamedatas.cardsontable) {
+                const card = gamedatas.cardsontable[i];
+                const suit = card.type;
+                const value = card.type_arg;
+                var player_id = card.location_arg;
+                this.playCardOnTable(player_id, suit, value, card.id);
+            }
+
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
@@ -150,10 +159,12 @@ function (dojo, declare) {
             {            
                 switch( stateName )
                 {
+                    case 'playerTurn':
+                        this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
+                        break;
                     case 'gameSelection':
-                        // TODO: Apparently this is no good as translations won't work with variables. Though I'd like to test this.
                         args.available_games?.forEach(game => {
-                            this.addActionButton(game.type, _(game.name), () => this.onGameSelection(game.type))
+                            this.addActionButton(game.type, _(game.name), () => this.onBtnGameSelection(game.type))
                         });
                         break;
                 }
@@ -182,6 +193,32 @@ function (dojo, declare) {
             }
         },
 
+        playCardOnTable : function(player_id, suit, value, card_id) {
+            // player_id => direction
+            dojo.place(this.format_block('jstpl_card', {
+                x : this.cardwidth * (value - 2),
+                y : this.cardheight * (suit - 1),
+                player_id : player_id
+            }), 'playertablecard_' + player_id);
+
+            if (player_id != this.player_id) {
+                // Some opponent played a card
+                // Move card from player panel
+                this.placeOnObject('cardontable_' + player_id, 'overall_player_board_' + player_id);
+            } else {
+                // You played a card. If it exists in your hand, move card from there and remove
+                // corresponding item
+
+                if ($('myhand_item_' + card_id)) {
+                    this.placeOnObject('cardontable_' + player_id, 'myhand_item_' + card_id);
+                    this.playerHand.removeFromStockById(card_id);
+                }
+            }
+
+            // In any case: move it to its final destination
+            this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
+        },
+
         ///////////////////////////////////////////////////
         //// Player's action
         
@@ -195,41 +232,22 @@ function (dojo, declare) {
             _ make a call to the game server
         
         */
-        
-        /* Example:
-        
-        onMyMethodToCall1: function( evt )
-        {
-            console.log( 'onMyMethodToCall1' );
-            
-            // Preventing default browser reaction
-            dojo.stopEvent( evt );
+        onBtnPlayCard: function() {
+            const action = "playCard";
+            if (!this.checkAction(action)) return;
 
-            // Check that this action is possible (see "possibleactions" in states.inc.php)
-            if( ! this.checkAction( 'myAction' ) )
-            {   return; }
+            // TODO: Should do some validation around the card played, but for now just play it.
+            const selected_cards = this.playerHand.getSelectedItems();
+            const card_id = selected_cards[0].id;
 
-            this.ajaxcall( "/guillotinedc/guillotinedc/myAction.html", { 
-                                                                    lock: true, 
-                                                                    myArgument1: arg1, 
-                                                                    myArgument2: arg2,
-                                                                    ...
-                                                                 }, 
-                         this, function( result ) {
-                            
-                            // What to do after the server call if it succeeded
-                            // (most of the time: nothing)
-                            
-                         }, function( is_error) {
+            this.playerHand.unselectAll();
+            this.ajaxcall(
+                "/" + this.game_name + "/" + this.game_name + "/" + action + ".html",
+                {lock: true, card_id: card_id}, this, function (result) {}, function (is_error) {}
+            );
+        },
 
-                            // What to do after the server call in anyway (success or failure)
-                            // (most of the time: nothing)
-
-                         } );        
-        },        
-        
-        */
-        onGameSelection: function(game_type) {
+        onBtnGameSelection: function(game_type) {
             const action = "gameSelection";
             if (!this.checkAction(action)) return;
 
@@ -257,6 +275,10 @@ function (dojo, declare) {
             console.log( 'notifications subscriptions setup' );
 
             // dojo.subscribe('newHand', this, "notif_newHand");
+            dojo.subscribe('playCard', this, "notif_playCard");
+            dojo.subscribe('trickWin', this, "notif_trickWin");
+            this.notifqueue.setSynchronous('trickWin', 1000);
+            dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer");
             
             // TODO: here, associate your game notifications with local methods
             
@@ -271,6 +293,20 @@ function (dojo, declare) {
             // 
         },  
 
+        // TODO: from this point and below, you can write your game notifications handling methods
+
+        notif_giveAllCardsToPlayer : function(notif) {
+            // Move all cards on table to given table, then destroy them
+            var winner_id = notif.args.player_id;
+            for ( var player_id in this.gamedatas.players) {
+                var anim = this.slideToObject('cardontable_' + player_id, 'overall_player_board_' + winner_id);
+                dojo.connect(anim, 'onEnd', function(node) {
+                    dojo.destroy(node);
+                });
+                anim.play();
+            }
+        },
+
         notif_newHand : function(notif) {
             // We received a new full hand of 8 cards.
             this.playerHand.removeAll();
@@ -283,21 +319,12 @@ function (dojo, declare) {
             }
         },
 
-        // TODO: from this point and below, you can write your game notifications handling methods
-        
-        /*
-        Example:
-        
-        notif_cardPlayed: function( notif )
-        {
-            console.log( 'notif_cardPlayed' );
-            console.log( notif );
-            
-            // Note: notif.args contains the arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call
-            
-            // TODO: play the card in the user interface.
-        },    
-        
-        */
-   });             
+        notif_playCard : function(notif) {
+            this.playCardOnTable(notif.args.player_id, notif.args.suit, notif.args.value, notif.args.card_id);
+        },
+
+        notif_trickWin : function(notif) {
+            // We do nothing here (just wait so players can view the 4 cards played before they're gone).
+        },
+   });
 });

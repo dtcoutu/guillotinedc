@@ -35,6 +35,7 @@ class guillotinedc extends Table
         
         self::initGameStateLabels([
             SELECTED_GAME => 10,
+            TRICK_SUIT => 11,
         ]);
 
         $this->cards = self::getNew("module.common.deck");
@@ -123,6 +124,7 @@ class guillotinedc extends Table
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb( $sql );
         $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
+        $result['cardsontable'] = $this->cards->getCardsInLocation('cardsontable');
   
         // TODO: Gather all information about current game situation (visible by player $current_player_id).
   
@@ -166,31 +168,6 @@ class guillotinedc extends Table
         (note: each method below must match an input method in guillotinedc.action.php)
     */
 
-    /*
-    
-    Example:
-
-    function playCard( $card_id )
-    {
-        // Check that this is the player's turn and that it is a "possible action" at this game state (see states.inc.php)
-        self::checkAction( 'playCard' ); 
-        
-        $player_id = self::getActivePlayerId();
-        
-        // Add your game logic to play a card there 
-        ...
-        
-        // Notify all players about the card played
-        self::notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} plays ${card_name}' ), array(
-            'player_id' => $player_id,
-            'player_name' => self::getActivePlayerName(),
-            'card_name' => $card_name,
-            'card_id' => $card_id
-        ) );
-          
-    }
-    
-    */
     function gameSelection($selected_game) {
         self::checkAction("gameSelection");
 
@@ -203,6 +180,34 @@ class guillotinedc extends Table
             'player_name' => self::getActivePlayerName(),
             'game_name' => $game_name,
         ]);
+
+        $this->gamestate->nextState("startHand");
+    }
+
+    function playCard($card_id) {
+        self::checkAction("playCard");
+
+        $player_id = self::getActivePlayerId();
+
+        // TODO: Should verify the player actually has the card being requested...
+
+        $current_card = $this->cards->getCard($card_id);
+
+        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
+
+        // TODO: Eventually want to set the suit for the trick for enforcing following
+
+        self::notifyAllPlayers('playCard', clienttranslate('${player_name} plays ${suit_displayed}${value_displayed}'), [
+            'player_name' => self::getActivePlayerName(),
+            'suit_displayed' => $this->suits[$current_card['type']]['name'],
+            'value_displayed' => $this->values_label[$current_card['type_arg']],
+            'suit' => $current_card['type'],
+            'value' => $current_card['type_arg'],
+            'card_id' => $card_id,
+            'player_id' => $player_id
+        ]);
+
+        $this->gamestate->nextState("cardPlayed");
     }
 
     
@@ -232,6 +237,11 @@ class guillotinedc extends Table
         );
     }    
     */
+
+    function argPlayerTurn() {
+        // Determine cards that are eligble to play, for now just pass through
+        return [];
+    }
 
     function argSelectGame() {
         // TODO: Need to check what games haven't been played by the current player
@@ -265,6 +275,10 @@ class guillotinedc extends Table
         $this->gamestate->nextState( 'some_gamestate_transition' );
     }    
     */
+    function stEndHand() {
+
+    }
+
     function stNewHand() {
         // TODO: increament hand count stat
 
@@ -282,6 +296,43 @@ class guillotinedc extends Table
         self::setGameStateValue(SELECTED_GAME, 0);
 
         $this->gamestate->nextState("selectGame");
+    }
+
+    function stNewTrick() {
+        self::setGameStateValue(TRICK_SUIT, 0);
+
+        $this->gamestate->nextState("playerTurn");
+    }
+
+    function stNextPlayer() {
+        if ($this->cards->countCardInLocation('cardsontable') == 4) {
+            // Ultimately need to figure out who won the trick and set them as the active player
+            // For now just collect the cards and move to the next player unless all cards have been played.
+
+            $winning_player_id = self::activeNextPlayer();
+
+            $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $winning_player_id);
+
+            $players = self::loadPlayersBasicInfos();
+            self::notifyAllPlayers('trickWin', clienttranslate('${player_name} wins the trick'), [
+                'player_id' => $winning_player_id,
+                'player_name' => $players[ $winning_player_id ]['player_name']
+            ]);
+            self::notifyAllPlayers('giveAllCardsToPlayer','', [
+                'player_id' => $winning_player_id
+            ]);
+
+            if ($this->cards->countCardInLocation('hand') == 0) {
+                $this->gamestate->nextState("endHand");
+            } else {
+                $this->gamestate->nextState("nextTrick");
+            }
+        } else {
+            // Not end of trick or hand, so move to the next player
+            $player_id = self::activeNextPlayer();
+            self::giveExtraTime($player_id);
+            $this->gamestate->nextState("nextPlayer");
+        }
     }
 
 //////////////////////////////////////////////////////////////////////////////

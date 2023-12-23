@@ -35,7 +35,10 @@ class view_guillotinedc_guillotinedc extends game_view
     }
     
   	function build_page( $viewArgs )
-  	{		
+  	{
+        global $g_user;
+        $game_name = self::getGameName();
+        $template = $game_name . "_" . $game_name;
   	    // Get players & players number
         $players = $this->game->loadPlayersBasicInfos();
         $players_nbr = count( $players );
@@ -43,6 +46,35 @@ class view_guillotinedc_guillotinedc extends game_view
         /*********** Place your code below:  ************/
 
         $this->tpl['MY_HAND'] = self::_("My hand");
+
+        $directions = ['S', 'W', 'N', 'E'];
+
+        $this->page->begin_block($template, "player");
+        if ($this->game->isSpectator()) {
+            // Spectator mode: take any player for south
+            foreach ($players as $player_id => $info) {
+                $dir = array_shift($directions);
+                $this->page->insert_block("player", [
+                    "PLAYER_ID" => $player_id,
+                    "PLAYER_NAME" => $info['player_name'],
+                    "PLAYER_COLOR" => $info['player_color'],
+                    "DIR" => $dir,
+                ]);
+            }
+        } else {
+            // Normal mode: current player is on south
+            $player_id = $g_user->get_id();
+            for ($i = 1; $i <= $players_nbr; $i++) {
+                $dir = array_shift($directions);
+                $this->page->insert_block("player", [
+                    "PLAYER_ID" => $player_id,
+                    "PLAYER_NAME" => $players[$player_id]['player_name'],
+                    "PLAYER_COLOR" => $players[$player_id]['player_color'],
+                    "DIR" => $dir,
+                ]);
+                $player_id = $this->game->getPlayerAfter($player_id);
+            }
+        }
 
         /*
         

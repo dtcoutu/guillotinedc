@@ -20,14 +20,10 @@
  */
 
 $this->suits = [
-  1 => ['name' => clienttranslate('spade'),
-        'nametr' => self::_('spade')],
-  2 => ['name' => clienttranslate('heart'),
-        'nametr' => self::_('heart')],
-  3 => ['name' => clienttranslate('club'),
-        'nametr' => self::_('club')],
-  4 => ['name' => clienttranslate('diamond'),
-        'nametr' => self::_('diamond')],
+  1 => ['name' => '<span style="color:black" class="suit_1">♠</span>'],
+  2 => ['name' => '<span style="color:red" class="suit_2">♥</span>'],
+  3 => ['name' => '<span style="color:black" class="suit_3">♣</span>'],
+  4 => ['name' => '<span style="color:red" class="suit_4">♦</span>'],
 ];
 
 $this->values_label = [

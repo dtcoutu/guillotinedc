@@ -69,8 +69,9 @@ function (dojo, declare) {
             // Create card types
             for (var suit = 1; suit <= 4; suit++) {
                 for (var value = 7; value <= 14; value++) {
-                    var card_type_id = this.getCardUniqueId(suit, value);
-                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
+                    const card_type_id = this.getCardUniqueId(suit, value);
+                    const card_weight = this.getCardWeight(suit, value);
+                    this.playerHand.addItemType(card_type_id, card_weight, g_gamethemeurl + 'img/cards.jpg', card_type_id);
                 }
             }
 
@@ -182,6 +183,18 @@ function (dojo, declare) {
         */
         getCardUniqueId: function(suit, value) {
             return (suit - 1) * 13 + (value - 2);
+        },
+
+        getCardWeight: function(suit, value) {
+            var base_weight = this.getCardUniqueId(suit, value);
+
+            if (value == 10) {
+                return base_weight + 3;
+            } else if (value == 14) {
+                return base_weight + 1;
+            } else {
+                return base_weight;
+            }
         },
     
         displayHand: function(cards) {

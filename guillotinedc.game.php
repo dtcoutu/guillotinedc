@@ -36,6 +36,7 @@ class guillotinedc extends Table
         self::initGameStateLabels([
             SELECTED_GAME => 10,
             TRICK_SUIT => 11,
+            DEALER => 12,
         ]);
 
         $this->cards = self::getNew("module.common.deck");
@@ -96,10 +97,10 @@ class guillotinedc extends Table
         //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
 
         // TODO: setup the initial game situation here
-       
 
-        // Activate first player (which is in general a good idea :) )
-        $this->activeNextPlayer();
+        // To keep it at the player initially selected we'll go back twice, so when
+        // the new hand is dealt and it advances one it'll be at the current player.
+        self::setGameStateInitialValue(DEALER, self::getPlayerBefore(self::getPlayerBefore($this->activeNextPlayer())));
 
         /************ End of the game initialization *****/
     }
@@ -123,6 +124,7 @@ class guillotinedc extends Table
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb( $sql );
+        $result[DEALER] = self::getGameStateValue(DEALER);
         $result[HAND] = $this->cards->getCardsInLocation(HAND, $current_player_id);
         $result[CARDS_ON_TABLE] = $this->cards->getCardsInLocation(CARDS_ON_TABLE);
   
@@ -194,6 +196,8 @@ class guillotinedc extends Table
     function gameSelection($selected_game) {
         self::checkAction("gameSelection");
 
+        $player_id = self::getActivePlayerId();
+
         $game_id = $this->games[$selected_game]['id'];
         self::setGameStateValue(SELECTED_GAME, $game_id);
 
@@ -201,6 +205,7 @@ class guillotinedc extends Table
         self::notifyAllPlayers('gameSelection', clienttranslate('${player_name} selects ${game_name} as the game to play'), [
             'i18n' => ['game_name'],
             'player_name' => self::getActivePlayerName(),
+            'dealer_id' => $player_id,
             'game_name' => $game_name,
         ]);
 
@@ -306,6 +311,10 @@ class guillotinedc extends Table
 
         // TODO: Gather all cards to the deck
 
+        $new_dealer_id = self::getPlayerAfter(self::getGameStateValue(DEALER));
+        self::setGameStateValue(DEALER, $new_dealer_id);
+        $this->gamestate->changeActivePlayer($new_dealer_id);
+
         $this->cards->shuffle('deck');
         // Deal 8 cards to each player
         $players = self::loadPlayersBasicInfos();
@@ -314,6 +323,10 @@ class guillotinedc extends Table
             // Notify player about their cards
             self::notifyPlayer($player_id, 'newHand', '', ['cards' => $cards]);
         }
+
+        self::notifyAllPlayers('newRound', '', [
+            'dealer_id' => $new_dealer_id
+        ]);
 
         self::setGameStateValue(SELECTED_GAME, 0);
 

@@ -1,6 +1,7 @@
 <?php
 
 // Game State Variables
+define('DEALER', 'dealer');
 define('TRICK_SUIT', 'trick_suit');
 define('SELECTED_GAME', 'selected_game');
 

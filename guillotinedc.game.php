@@ -119,13 +119,23 @@ class guillotinedc extends Table
         $result = array();
     
         $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
-    
+
+        $selected_game = null;
+        $selected_game_id = self::getGameStateValue(SELECTED_GAME);
+        foreach ($this->games as $game_type => $game) {
+            if ($game['id'] == $selected_game_id) {
+                $selected_game = $game['name'];
+                break;
+            }
+        }
+
         // Get information about players
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb( $sql );
         $result[DEALER] = self::getGameStateValue(DEALER);
         $result[HAND] = $this->cards->getCardsInLocation(HAND, $current_player_id);
+        $result[SELECTED_GAME] = $selected_game;
         $result[CARDS_ON_TABLE] = $this->cards->getCardsInLocation(CARDS_ON_TABLE);
   
         // TODO: Gather all information about current game situation (visible by player $current_player_id).

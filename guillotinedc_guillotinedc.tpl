@@ -28,6 +28,7 @@
     <!-- BEGIN player -->
     <div class="playertable whiteblock playertable_{DIR}">
         <div class="playertablename" style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</div>
+        <div class="playertableselectedgame" id="dealer_p{PLAYER_ID}">Choosing game...</div>
         <div class="playertablecard" id="playertablecard_{PLAYER_ID}"></div>
     </div>
     <!-- END player -->

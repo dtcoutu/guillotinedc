@@ -87,6 +87,9 @@ function (dojo, declare) {
                 this.playCardOnTable(player_id, suit, value, card.id);
             }
 
+            document.getElementById('dealer_p' + this.gamedatas.dealer).classList.add('show_dealer');
+            document.getElementById('dealer_p' + this.gamedatas.dealer).innerHTML = this.gamedatas.selected_game;
+
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
@@ -288,6 +291,8 @@ function (dojo, declare) {
             console.log( 'notifications subscriptions setup' );
 
             // dojo.subscribe('newHand', this, "notif_newHand");
+            dojo.subscribe('newRound', this, "notif_newRound");
+            dojo.subscribe('gameSelection', this, "notif_gameSelection");
             dojo.subscribe('playCard', this, "notif_playCard");
             dojo.subscribe('trickWin', this, "notif_trickWin");
             this.notifqueue.setSynchronous('trickWin', 1000);
@@ -307,6 +312,11 @@ function (dojo, declare) {
         },  
 
         // TODO: from this point and below, you can write your game notifications handling methods
+
+        notif_gameSelection : function(notif) {
+            // TODO: This causes the element to move because of the styling - the text gets short enough to go into the same line.
+            document.getElementById('dealer_p'+notif.args.dealer_id).innerHTML = notif.args.game_name;
+        },
 
         notif_giveAllCardsToPlayer : function(notif) {
             // Move all cards on table to given table, then destroy them
@@ -330,6 +340,11 @@ function (dojo, declare) {
                 var value = card.type_arg;
                 this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
+        },
+
+        notif_newRound : function(notif) {
+            document.querySelectorAll('.show_dealer').forEach(e => e.classList.remove('show_dealer'));
+            document.getElementById('dealer_p' + notif.args.dealer_id).classList.add('show_dealer');
         },
 
         notif_playCard : function(notif) {

@@ -107,4 +107,11 @@
     font-weight: bold;
 }
 
+.playertableselectedgame {
+    display: none;
+}
+
+.playertableselectedgame.show_dealer {
+    display: block;
+}
 

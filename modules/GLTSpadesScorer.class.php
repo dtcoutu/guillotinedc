@@ -1,6 +1,7 @@
 <?php
 
 require_once('GLTScorer.interface.php');
+require_once('constants.inc.php');
 
 class GLTSpadesScorer implements GLTScorer {
   function score(array $player_ids, array $won_cards) {

@@ -19,7 +19,11 @@
 
 require_once( APP_GAMEMODULE_PATH.'module/table/table.game.php' );
 require_once('modules/constants.inc.php');
-
+require_once('modules/GLTGuillotineScorer.class.php');
+require_once('modules/GLTParliamentScorer.class.php');
+require_once('modules/GLTQueensScorer.class.php');
+require_once('modules/GLTRoyaltyScorer.class.php');
+require_once('modules/GLTSpadesScorer.class.php');
 
 class guillotinedc extends Table
 {
@@ -300,20 +304,47 @@ class guillotinedc extends Table
         The action method of state X is called everytime the current game state is set to X.
     */
     
-    /*
-    
-    Example for game state "MyGameState":
-
-    function stMyGameState()
-    {
-        // Do some stuff ...
-        
-        // (very often) go to another gamestate
-        $this->gamestate->nextState( 'some_gamestate_transition' );
-    }    
-    */
     function stEndHand() {
+        $players = self::loadPlayersBasicInfos();
+        $cards = $this->cards->getCardsInLocation(CARDS_WON);
+        $scorer = null;
 
+        $selected_game_id = self::getGameStateValue(SELECTED_GAME);
+        switch ($selected_game_id) {
+            case 1:
+                $scorer = new GLTParliamentScorer();
+                break;
+            case 2:
+                $scorer = new GLTSpadesScorer();
+                break;
+            case 3:
+                $scorer = new GLTQueensScorer();
+                break;
+            case 4:
+                $scorer = new GLTRoyaltyScorer();
+                break;
+            
+            default:
+                throw new BgaUserException(sprintf(self::_("The selected game id, %s, does not have a scorer"), $selected_game_id));
+                break;
+        }
+
+        $player_to_points = $scorer->score(array_keys($players), $cards);
+
+        foreach ($player_to_points as $player_id => $points) {
+            $sql = "UPDATE player SET player_score=player_score+$points WHERE player_id='$player_id'";
+            self::DbQuery($sql);
+            self::notifyAllPlayers("points", clienttranslate('${player_name} gained ${points} points'), [
+                'player_name' => $players[$player_id]['player_name'],
+                'points' => $points,
+                'player_id' => $player_id,
+            ]);
+        }
+
+        $new_scores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
+        self::notifyAllPlayers("newScores", '', ['newScores' => $new_scores]);
+
+        $this->gamestate->nextState("nextHand");
     }
 
     function stNewHand() {

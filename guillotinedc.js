@@ -192,7 +192,7 @@ function (dojo, declare) {
             var base_weight = this.getCardUniqueId(suit, value);
 
             if (value == 10) {
-                return base_weight + 3;
+                return base_weight + 4;
             } else if (value == 14) {
                 return base_weight + 1;
             } else {
@@ -297,24 +297,12 @@ function (dojo, declare) {
             dojo.subscribe('trickWin', this, "notif_trickWin");
             this.notifqueue.setSynchronous('trickWin', 1000);
             dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer");
-            
-            // TODO: here, associate your game notifications with local methods
-            
-            // Example 1: standard notification handling
-            // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-            
-            // Example 2: standard notification handling + tell the user interface to wait
-            //            during 3 seconds after calling the method in order to let the players
-            //            see what is happening in the game.
-            // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-            // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
-            // 
+            dojo.subscribe('newScores', this, "notif_newScores");
         },  
 
         // TODO: from this point and below, you can write your game notifications handling methods
 
         notif_gameSelection : function(notif) {
-            // TODO: This causes the element to move because of the styling - the text gets short enough to go into the same line.
             document.getElementById('dealer_p'+notif.args.dealer_id).innerHTML = notif.args.game_name;
         },
 
@@ -345,6 +333,12 @@ function (dojo, declare) {
         notif_newRound : function(notif) {
             document.querySelectorAll('.show_dealer').forEach(e => e.classList.remove('show_dealer'));
             document.getElementById('dealer_p' + notif.args.dealer_id).classList.add('show_dealer');
+        },
+
+        notif_newScores : function(notif) {
+            for (var player_id in notif.args.newScores) {
+                this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id]);
+            }
         },
 
         notif_playCard : function(notif) {

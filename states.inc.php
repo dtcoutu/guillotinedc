@@ -114,7 +114,7 @@ $machinestates = [
         "description" => "",
         "type" => "game",
         "action" => "stEndHand",
-        "transitions" => []
+        "transitions" => ["nextHand" => 2]
     ],
    
     // Final state.

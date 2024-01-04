@@ -38,28 +38,28 @@ $this->values_label = [
 ];
 
 $this->games = [
-  'parliament' => [
-      'id' => 1,
+  1 => [
+      'type' => 'parliament',
       'name' => clienttranslate('Parliament')
   ],
-  'spades' => [
-      'id' => 2,
+  2 => [
+      'type' => 'spades',
       'name' => clienttranslate('Spades')
   ],
-  'queens' => [
-      'id' => 3,
+  3 => [
+      'type' => 'queens',
       'name' => clienttranslate('Queens')
   ],
-  'royalty' => [
-      'id' => 4,
+  4 => [
+      'type' => 'royalty',
       'name' => clienttranslate('Royalty')
   ],
-  'dominoes' => [
-      'id' => 5,
+  5 => [
+      'type' => 'dominoes',
       'name' => clienttranslate('Dominoes')
   ],
-  'guillotine' => [
-      'id' => 6,
+  6 => [
+      'type' => 'guillotine',
       'name' => clienttranslate('Guillotine')
   ],
 ];

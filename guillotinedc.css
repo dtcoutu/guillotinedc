@@ -60,6 +60,19 @@
     background-image: url('img/cards.jpg');
 }
 
+.game_display {
+    font-size: smaller;
+    font-weight: bold;
+    float: left;
+    margin-left: 10px;
+}
+
+.game_display.played {
+    font-weight: normal;
+    text-decoration: line-through;
+    color: gray;
+}
+
 .playertablename {
     font-weight: bold;
 }

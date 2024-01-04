@@ -27,6 +27,11 @@ CREATE TABLE IF NOT EXISTS `card` (
   PRIMARY KEY (`card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- Example 2: add a custom field to the standard "player" table
--- ALTER TABLE `player` ADD `player_my_custom_field` INT UNSIGNED NOT NULL DEFAULT '0';
+CREATE TABLE IF NOT EXISTS `player_game` (
+  `player_game_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `player_id` INT NOT NULL,
+  `game_id` SMALLINT NOT NULL,
+  `played` BOOL NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_game_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 

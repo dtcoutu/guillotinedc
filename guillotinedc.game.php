@@ -38,9 +38,9 @@ class guillotinedc extends Table
         parent::__construct();
         
         self::initGameStateLabels([
-            SELECTED_GAME => 10,
-            TRICK_SUIT => 11,
-            DEALER => 12,
+            DEALER => 10,
+            SELECTED_GAME => 11,
+            TRICK_SUIT => 12,
         ]);
 
         $this->cards = self::getNew("module.common.deck");
@@ -81,6 +81,8 @@ class guillotinedc extends Table
         self::DbQuery( $sql );
         self::reattributeColorsBasedOnPreferences( $players, $gameinfos['player_colors'] );
         self::reloadPlayersBasicInfos();
+
+        $this->initPlayerGameState();
         
         /************ Start the game initialization *****/
 
@@ -124,19 +126,23 @@ class guillotinedc extends Table
     
         $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
 
-        $selected_game = null;
         $selected_game_id = self::getGameStateValue(SELECTED_GAME);
-        foreach ($this->games as $game_type => $game) {
-            if ($game['id'] == $selected_game_id) {
-                $selected_game = $game['name'];
-                break;
-            }
+        $selected_game = null;
+        if ($selected_game_id) {
+            $selected_game = $this->games[$selected_game_id]['name'];
         }
 
         // Get information about players
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb( $sql );
+
+        $player_game_states = [];
+        foreach ($result['players'] as $player) {
+            $player_game_states[$player['id']] = $this->gameStates($player['id']);
+        }
+
+        $result['player_game_states'] = $player_game_states;
         $result[DEALER] = self::getGameStateValue(DEALER);
         $result[HAND] = $this->cards->getCardsInLocation(HAND, $current_player_id);
         $result[SELECTED_GAME] = $selected_game;
@@ -183,6 +189,29 @@ class guillotinedc extends Table
         }
     }
 
+    function gameStates($player_id, $available_only = false) {
+        $game_sql = "SELECT player_game_id, player_id, game_id, played FROM player_game WHERE player_id=$player_id";
+
+        if ($available_only) {
+            $game_sql .= " AND played=0";
+        }
+
+        $available_games = self::getCollectionFromDb($game_sql);
+        $game_states = [];
+        foreach ($available_games as &$player_game) {
+            $current_game = $this->games[$player_game['game_id']];
+            $game_states[] = [
+                'player_id' => $player_id,
+                'game_id' => $player_game['game_id'],
+                'game_type' => $current_game['type'],
+                'game_name' => $current_game['name'],
+                'played' => $player_game['played']
+            ];
+        }
+
+        return $game_states;
+    }
+
     function higherCard($higher_card, $new_card) {
         if ($higher_card === null) return $new_card;
         if ($new_card === null) return $higher_card;
@@ -196,6 +225,26 @@ class guillotinedc extends Table
         } else if ($new_card['type_arg'] > $higher_card['type_arg']) {
             return $new_card;
         } else return $higher_card;
+    }
+
+    function initPlayerGameState() {
+        // Populate games to play for player
+        $players = $this->loadPlayersBasicInfos();
+
+        $game_sql = "INSERT INTO player_game (player_id, game_id) VALUES ";
+        $game_values = [];
+        foreach ($players as $player_id => $player) {
+            foreach ($this->games as $game_id => $game) {
+                $game_values[] = "('$player_id', '$game_id')";
+            }
+        }
+
+        $game_sql .= implode($game_values, ',');
+        self::DbQuery($game_sql);
+    }
+
+    function recordSelectedGame($player_id, $game_id) {
+        self::DbQuery("UPDATE player_game SET played=1 WHERE player_id='$player_id' AND game_id='$game_id'");
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -212,15 +261,25 @@ class guillotinedc extends Table
 
         $player_id = self::getActivePlayerId();
 
-        $game_id = $this->games[$selected_game]['id'];
-        self::setGameStateValue(SELECTED_GAME, $game_id);
+        $game_id = null;
+        $game_name = null;
+        foreach ($this->games as $id => $game) {
+            if ($game['type'] == $selected_game) {
+                $game_id = $id;
+                $game_name = $game['name'];
+                break;
+            }
+        }
 
-        $game_name = $this->games[$selected_game]['name'];
+        self::setGameStateValue(SELECTED_GAME, $game_id);
+        $this->recordSelectedGame($player_id, $game_id);
+
         self::notifyAllPlayers('gameSelection', clienttranslate('${player_name} selects ${game_name} as the game to play'), [
             'i18n' => ['game_name'],
             'player_name' => self::getActivePlayerName(),
             'dealer_id' => $player_id,
             'game_name' => $game_name,
+            'game_type' => $selected_game,
         ]);
 
         $this->gamestate->nextState("startHand");
@@ -285,13 +344,10 @@ class guillotinedc extends Table
     }
 
     function argSelectGame() {
-        // TODO: Need to check what games haven't been played by the current player
-        $available_games = [];
-        foreach ($this->games as $game_type => $game) {
-            $available_games[] = ['type' => $game_type, 'name' => $game['name']];
-        }
+        $player_id = self::getActivePlayerId();
+
         return [
-            "available_games" => $available_games
+            "available_games" => $this->gameStates($player_id, true)
         ];
     }
 
@@ -350,17 +406,16 @@ class guillotinedc extends Table
     function stNewHand() {
         // TODO: increament hand count stat
 
-        // TODO: Gather all cards to the deck
-
         $new_dealer_id = self::getPlayerAfter(self::getGameStateValue(DEALER));
         self::setGameStateValue(DEALER, $new_dealer_id);
         $this->gamestate->changeActivePlayer($new_dealer_id);
 
-        $this->cards->shuffle('deck');
+        $this->cards->moveAllCardsInLocation(null, DECK);
+        $this->cards->shuffle(DECK);
         // Deal 8 cards to each player
         $players = self::loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
-            $cards = $this->cards->pickCards(8, 'deck', $player_id);
+            $cards = $this->cards->pickCards(8, DECK, $player_id);
             // Notify player about their cards
             self::notifyPlayer($player_id, 'newHand', '', ['cards' => $cards]);
         }

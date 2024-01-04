@@ -13,5 +13,6 @@ define('SELECTED_GAME', 'selected_game');
 
 // Locations
 define('CARDS_WON', 'cardswon');
-define('HAND', 'hand');
 define('CARDS_ON_TABLE', 'cardsontable');
+define('DECK', 'deck');
+define('HAND', 'hand');

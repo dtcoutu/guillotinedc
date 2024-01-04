@@ -44,7 +44,7 @@
 
 // Javascript HTML templates
 var jstpl_card = '<div class="card cardontable" id="cardontable_${player_id}" style="background-position:-${x}px -${y}px"></div>';
-
+var jstpl_game_display = '<div id="glt_game_${game_type}_${player_id}" class="game_display game_display_${game_type} ${played}">${game_abbr}</div>';
 </script>  
 
 {OVERALL_GAME_FOOTER}

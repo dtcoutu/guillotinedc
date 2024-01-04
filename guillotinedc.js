@@ -55,8 +55,18 @@ function (dojo, declare) {
             for( var player_id in gamedatas.players )
             {
                 var player = gamedatas.players[player_id];
-                         
-                // TODO: Setting up players boards if needed
+
+                for (var i in gamedatas.player_game_states[player_id]) {
+                    var game_state = gamedatas.player_game_states[player_id][i];
+                    dojo.place(this.format_block('jstpl_game_display', {
+                        player_id: player_id,
+                        game_type: game_state.game_type,
+                        game_name: game_state.game_name,
+                        game_abbr: game_state.game_name.substring(0, 1),
+                        played: ((game_state.played === '1') ? 'played' : 'available')
+                    }), 'player_board_' + player_id);
+                    this.addTooltipToClass('game_display_' + game_state.game_type, _(game_state.game_name), '');
+                }
             }
             
             // TODO: Set up your game interface here, according to "gamedatas"
@@ -74,6 +84,9 @@ function (dojo, declare) {
                     this.playerHand.addItemType(card_type_id, card_weight, g_gamethemeurl + 'img/cards.jpg', card_type_id);
                 }
             }
+
+            // Player game state
+            console.log(gamedatas.player_game_states);
 
             // Cards in player hand
             this.displayHand(this.gamedatas.hand);
@@ -168,7 +181,7 @@ function (dojo, declare) {
                         break;
                     case 'gameSelection':
                         args.available_games?.forEach(game => {
-                            this.addActionButton(game.type, _(game.name), () => this.onBtnGameSelection(game.type))
+                            this.addActionButton(game.game_type, _(game.game_name), () => this.onBtnGameSelection(game.game_type))
                         });
                         break;
                 }
@@ -253,7 +266,14 @@ function (dojo, declare) {
             if (!this.checkAction(action)) return;
 
             // TODO: Should do some validation around the card played, but for now just play it.
+
             const selected_cards = this.playerHand.getSelectedItems();
+
+            if (selected_cards.length !== 1) {
+                this.showMessage(_('Please select a card'), "error");
+                return;
+            }
+
             const card_id = selected_cards[0].id;
 
             this.playerHand.unselectAll();
@@ -290,20 +310,20 @@ function (dojo, declare) {
         {
             console.log( 'notifications subscriptions setup' );
 
-            // dojo.subscribe('newHand', this, "notif_newHand");
-            dojo.subscribe('newRound', this, "notif_newRound");
-            dojo.subscribe('gameSelection', this, "notif_gameSelection");
-            dojo.subscribe('playCard', this, "notif_playCard");
-            dojo.subscribe('trickWin', this, "notif_trickWin");
+            const notif_list = ['newHand', 'newRound', 'gameSelection', 'playCard', 'trickWin', 'giveAllCardsToPlayer', 'newScores'];
+            notif_list.forEach(s => dojo.subscribe(s, this, 'notif_' + s));
+
+            this.notifqueue.setSynchronous('newRound', 1000);
             this.notifqueue.setSynchronous('trickWin', 1000);
-            dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer");
-            dojo.subscribe('newScores', this, "notif_newScores");
+            this.notifqueue.setSynchronous('playCard', 100);
+            this.notifqueue.setSynchronous('giveAllCardsToPlayer', 600);
         },  
 
         // TODO: from this point and below, you can write your game notifications handling methods
 
         notif_gameSelection : function(notif) {
             document.getElementById('dealer_p'+notif.args.dealer_id).innerHTML = notif.args.game_name;
+            document.getElementById('glt_game_' + notif.args.game_type + '_' + notif.args.dealer_id).classList.add('played');
         },
 
         notif_giveAllCardsToPlayer : function(notif) {

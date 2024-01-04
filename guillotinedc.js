@@ -69,8 +69,6 @@ function (dojo, declare) {
                 }
             }
             
-            // TODO: Set up your game interface here, according to "gamedatas"
-
             this.playerHand = new ebg.stock();
             this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
             this.playerHand.image_items_per_row = 13;
@@ -102,7 +100,9 @@ function (dojo, declare) {
             }
 
             document.getElementById('dealer_p' + this.gamedatas.dealer).classList.add('show_dealer');
-            document.getElementById('dealer_p' + this.gamedatas.dealer).innerHTML = this.gamedatas.selected_game;
+            if (this.gamedatas.selected_game) {
+                document.getElementById('dealer_p' + this.gamedatas.dealer).innerHTML = this.gamedatas.selected_game;
+            }
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
@@ -126,7 +126,11 @@ function (dojo, declare) {
             case 'playerTurn':
                 if (this.isCurrentPlayerActive()) {
                     if (this.prefs[100].value == 2) {
-                        this.onBtnPlayCard();
+                        const selected_cards = this.playerHand.getSelectedItems();
+
+                        if (selected_cards.length === 1) {
+                            this.onBtnPlayCard();
+                        }
                     }
                 }
                 break;
@@ -326,7 +330,7 @@ function (dojo, declare) {
         // TODO: from this point and below, you can write your game notifications handling methods
 
         notif_gameSelection : function(notif) {
-            document.getElementById('dealer_p'+notif.args.dealer_id).innerHTML = notif.args.game_name;
+            document.getElementById('dealer_p' + notif.args.dealer_id).innerHTML = notif.args.game_name;
             document.getElementById('glt_game_' + notif.args.game_type + '_' + notif.args.dealer_id).classList.add('played');
         },
 

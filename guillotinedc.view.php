@@ -59,6 +59,7 @@ class view_guillotinedc_guillotinedc extends game_view
                     "PLAYER_NAME" => $info['player_name'],
                     "PLAYER_COLOR" => $info['player_color'],
                     "DIR" => $dir,
+                    "SELECTED_GAME" => _("Selecting game..."),
                 ]);
             }
         } else {
@@ -71,6 +72,7 @@ class view_guillotinedc_guillotinedc extends game_view
                     "PLAYER_NAME" => $players[$player_id]['player_name'],
                     "PLAYER_COLOR" => $players[$player_id]['player_color'],
                     "DIR" => $dir,
+                    "SELECTED_GAME" => self::_("Selecting game..."),
                 ]);
                 $player_id = $this->game->getPlayerAfter($player_id);
             }

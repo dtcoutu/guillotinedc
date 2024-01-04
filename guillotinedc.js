@@ -85,8 +85,9 @@ function (dojo, declare) {
                 }
             }
 
-            // Player game state
-            console.log(gamedatas.player_game_states);
+            if (this.prefs[100].value == 2) {
+                dojo.connect(this.playerHand, 'onChangeSelection', this, 'onHandCardSelect');
+            }
 
             // Cards in player hand
             this.displayHand(this.gamedatas.hand);
@@ -122,18 +123,13 @@ function (dojo, declare) {
             
             switch( stateName )
             {
-            
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Show some HTML block at this game state
-                dojo.style( 'my_html_block_id', 'display', 'block' );
-                
+            case 'playerTurn':
+                if (this.isCurrentPlayerActive()) {
+                    if (this.prefs[100].value == 2) {
+                        this.onBtnPlayCard();
+                    }
+                }
                 break;
-           */
-           
-           
             case 'dummmy':
                 break;
             }
@@ -177,7 +173,7 @@ function (dojo, declare) {
                 switch( stateName )
                 {
                     case 'playerTurn':
-                        this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
+                        if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
                         break;
                     case 'gameSelection':
                         args.available_games?.forEach(game => {
@@ -291,6 +287,14 @@ function (dojo, declare) {
                 "/" + this.game_name + "/" + this.game_name + "/" + action + ".html",
                 {lock: true, selected_game: game_type}, this, function (result) {}, function (is_error) {}
             );
+        },
+
+        onHandCardSelect: function(control_name, item_id) {
+            console.log("onHandCardSelect listener");
+            if (!this.isCurrentPlayerActive()) return;
+            if (item_id === undefined) return;
+
+            this.onBtnPlayCard();
         },
 
         

@@ -318,16 +318,24 @@ function (dojo, declare) {
         {
             console.log( 'notifications subscriptions setup' );
 
-            const notif_list = ['newHand', 'newRound', 'gameSelection', 'playCard', 'trickWin', 'giveAllCardsToPlayer', 'newScores'];
+            const notif_list = ['earlyEnd', 'gameSelection', 'giveAllCardsToPlayer', 'newHand', 'newRound', 'newScores', 'playCard', 'trickWin'];
             notif_list.forEach(s => dojo.subscribe(s, this, 'notif_' + s));
 
-            this.notifqueue.setSynchronous('newRound', 1000);
-            this.notifqueue.setSynchronous('trickWin', 1000);
-            this.notifqueue.setSynchronous('playCard', 100);
+            this.notifqueue.setSynchronous('earlyEnd', 1000);
             this.notifqueue.setSynchronous('giveAllCardsToPlayer', 600);
+            this.notifqueue.setSynchronous('newRound', 1000);
+            this.notifqueue.setSynchronous('playCard', 100);
+            this.notifqueue.setSynchronous('trickWin', 1000);
         },  
 
-        // TODO: from this point and below, you can write your game notifications handling methods
+        notif_earlyEnd: function(notif) {
+            for (let i in notif.args.remaining_cards) {
+                const card = notif.args.remaining_cards[i];
+                this.playCardOnTable(card.location_arg, card.type, card.type_arg, card.id);
+            }
+
+            document.querySelectorAll('.cardontable').forEach(e => this.slideToObjectAndDestroy(e, 'playertables'));
+        },
 
         notif_gameSelection : function(notif) {
             document.getElementById('dealer_p' + notif.args.dealer_id).innerHTML = notif.args.game_name;
@@ -335,15 +343,8 @@ function (dojo, declare) {
         },
 
         notif_giveAllCardsToPlayer : function(notif) {
-            // Move all cards on table to given table, then destroy them
             var winner_id = notif.args.player_id;
-            for ( var player_id in this.gamedatas.players) {
-                var anim = this.slideToObject('cardontable_' + player_id, 'overall_player_board_' + winner_id);
-                dojo.connect(anim, 'onEnd', function(node) {
-                    dojo.destroy(node);
-                });
-                anim.play();
-            }
+            document.querySelectorAll('.cardontable').forEach(e => this.slideToObjectAndDestroy(e.id, 'overall_player_board_' + winner_id));
         },
 
         notif_newHand : function(notif) {

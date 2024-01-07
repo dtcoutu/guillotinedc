@@ -6,6 +6,12 @@ define('HEART', 2);
 define('CLUB', 3);
 define('DIAMOND', 4);
 
+// Card Values
+define('JACK', 11);
+define('QUEEN', 12);
+define('KING', 13);
+define('ACE', 14);
+
 // Game State Variables
 define('DEALER', 'dealer');
 define('TRICK_SUIT', 'trick_suit');

@@ -115,4 +115,71 @@ final class GLTRoyaltyScorerTest extends TestCase {
 
     $this->assertEquals($expected, $actual);
   }
+
+  function testRemainingPoints() {
+    $cards_in_hands = [];
+
+    $scorer = new GLTRoyaltyScorer();
+
+    $actual = $scorer->remainingPoints($cards_in_hands);
+
+    $this->assertFalse($actual);
+  }
+
+  function testRemainingPoints_QueenOfSpadesRemaining() {
+    $cards_in_hands = [
+      ['type' => SPADE, 'type_arg' => 9],
+      ['type' => SPADE, 'type_arg' => 12],
+      ['type' => HEART, 'type_arg' => 9],
+      ['type' => CLUB, 'type_arg' => 11],
+      ['type' => CLUB, 'type_arg' => 14],
+      ['type' => DIAMOND, 'type_arg' => 7],
+      ['type' => DIAMOND, 'type_arg' => 10],
+      ['type' => DIAMOND, 'type_arg' => 14],
+    ];
+
+    $scorer = new GLTRoyaltyScorer();
+
+    $actual = $scorer->remainingPoints($cards_in_hands);
+
+    $this->assertTrue($actual);
+  }
+
+  function testRemainingPoints_KingOfHeartsRemaining() {
+    $cards_in_hands = [
+      ['type' => SPADE, 'type_arg' => 9],
+      ['type' => SPADE, 'type_arg' => 11],
+      ['type' => HEART, 'type_arg' => 13],
+      ['type' => CLUB, 'type_arg' => 11],
+      ['type' => CLUB, 'type_arg' => 14],
+      ['type' => DIAMOND, 'type_arg' => 7],
+      ['type' => DIAMOND, 'type_arg' => 10],
+      ['type' => DIAMOND, 'type_arg' => 14],
+    ];
+
+    $scorer = new GLTRoyaltyScorer();
+
+    $actual = $scorer->remainingPoints($cards_in_hands);
+
+    $this->assertTrue($actual);
+  }
+
+  function testRemainingPoints_NoPointsRemaining() {
+    $cards_in_hands = [
+      ['type' => SPADE, 'type_arg' => 9],
+      ['type' => SPADE, 'type_arg' => 11],
+      ['type' => HEART, 'type_arg' => 9],
+      ['type' => CLUB, 'type_arg' => 11],
+      ['type' => CLUB, 'type_arg' => 14],
+      ['type' => DIAMOND, 'type_arg' => 7],
+      ['type' => DIAMOND, 'type_arg' => 10],
+      ['type' => DIAMOND, 'type_arg' => 14],
+    ];
+
+    $scorer = new GLTRoyaltyScorer();
+
+    $actual = $scorer->remainingPoints($cards_in_hands);
+
+    $this->assertFalse($actual);
+  }
 }

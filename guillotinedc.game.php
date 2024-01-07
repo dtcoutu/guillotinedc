@@ -212,6 +212,32 @@ class guillotinedc extends Table
         return $game_states;
     }
 
+    function getScorer() {
+        $scorer = null;
+
+        $selected_game_id = self::getGameStateValue(SELECTED_GAME);
+        switch ($selected_game_id) {
+            case 1:
+                $scorer = new GLTParliamentScorer();
+                break;
+            case 2:
+                $scorer = new GLTSpadesScorer();
+                break;
+            case 3:
+                $scorer = new GLTQueensScorer();
+                break;
+            case 4:
+                $scorer = new GLTRoyaltyScorer();
+                break;
+            
+            default:
+                throw new BgaUserException(sprintf(self::_("The selected game id, %s, does not have a scorer"), $selected_game_id));
+                break;
+        }
+
+        return $scorer;
+    }
+
     function higherCard($higher_card, $new_card) {
         if ($higher_card === null) return $new_card;
         if ($new_card === null) return $higher_card;
@@ -245,6 +271,10 @@ class guillotinedc extends Table
 
     function recordSelectedGame($player_id, $game_id) {
         self::DbQuery("UPDATE player_game SET played=1 WHERE player_id='$player_id' AND game_id='$game_id'");
+    }
+
+    function sortCards ($a, $b): int {
+        return $a['type'] * 100 + $a['type_arg'] <=> $b['type'] * 100 + $b['type_arg'];
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -363,27 +393,7 @@ class guillotinedc extends Table
     function stEndHand() {
         $players = self::loadPlayersBasicInfos();
         $cards = $this->cards->getCardsInLocation(CARDS_WON);
-        $scorer = null;
-
-        $selected_game_id = self::getGameStateValue(SELECTED_GAME);
-        switch ($selected_game_id) {
-            case 1:
-                $scorer = new GLTParliamentScorer();
-                break;
-            case 2:
-                $scorer = new GLTSpadesScorer();
-                break;
-            case 3:
-                $scorer = new GLTQueensScorer();
-                break;
-            case 4:
-                $scorer = new GLTRoyaltyScorer();
-                break;
-            
-            default:
-                throw new BgaUserException(sprintf(self::_("The selected game id, %s, does not have a scorer"), $selected_game_id));
-                break;
-        }
+        $scorer = $this->getScorer();
 
         $player_to_points = $scorer->score(array_keys($players), $cards);
 
@@ -464,7 +474,30 @@ class guillotinedc extends Table
             if ($this->cards->countCardInLocation(HAND) == 0) {
                 $this->gamestate->nextState("endHand");
             } else {
-                $this->gamestate->nextState("nextTrick");
+                $scorer = $this->getScorer();
+                $cards_in_hands = $this->cards->getCardsInLocation(HAND);
+                if (!$scorer->remainingPoints($cards_in_hands)) {
+                    $cards_left = [];
+                    $players = $this->loadPlayersBasicInfos();
+                    foreach ($players as $player_id => $player) {
+                        $cards_left_list = [];
+                        $hand = $this->cards->getCardsInLocation(HAND, $player_id);
+                        usort($hand, [$this, "sortCards"]);
+                        foreach ($hand as $card) {
+                            $cards_left_list[] = $this->suits[$card['type']]['name'].''.$this->values_label[$card['type_arg']];
+                        }
+                        $cards_left[] = self::getPlayerNameById($player_id).' - '.implode(', ', $cards_left_list);
+                    }
+                    $cards_left_final = implode('<br>', $cards_left);
+
+                    self::notifyAllPlayers('earlyEnd', clienttranslate('Ending the hand early as all scoring cards are out<br><br>Cards left:<br>${cards_left}'), [
+                        'cards_left' => $cards_left_final,
+                        'remaining_cards' => $cards_in_hands,
+                    ]);
+                    $this->gamestate->nextState("endHand");
+                } else {
+                    $this->gamestate->nextState("nextTrick");
+                }
             }
         } else {
             // Not end of trick or hand, so move to the next player

@@ -10,8 +10,15 @@ class GLTGuillotineScorer implements GLTScorer {
     $this->first_trick_winner = $first_trick_winner;
     $this->last_trick_winner = $last_trick_winner;
   }
+  
+  function remainingPoints(array $cards_in_hands): bool {
+    if (count($cards_in_hands) > 0) {
+      return true;
+    }
+    return false;
+  }
 
-  function score(array $player_ids, array $won_cards) {
+  function score(array $player_ids, array $won_cards): array {
     $player_to_points = [];
     foreach ($player_ids as $player_id) {
       $player_to_points[$player_id] = 0;
@@ -27,11 +34,11 @@ class GLTGuillotineScorer implements GLTScorer {
         $player_to_points[$player_id] += 5;
       }
 
-      if ($card['type_arg'] == 12) {
+      if ($card['type_arg'] == QUEEN) {
         $player_to_points[$player_id] += 10;
       }
 
-      if ($card['type'] == HEART && $card['type_arg'] == 13) {
+      if ($card['type'] == HEART && $card['type_arg'] == KING) {
         $player_to_points[$player_id] += 10;
       }
     }

@@ -115,4 +115,29 @@ final class GLTParliamentScorerTest extends TestCase {
 
     $this->assertEquals($expected, $actual);
   }
+
+  function testRemainingPoints() {
+    $cards_in_hands = [];
+
+    $scorer = new GLTParliamentScorer();
+
+    $actual = $scorer->remainingPoints($cards_in_hands);
+
+    $this->assertFalse($actual);
+  }
+
+  function testRemainingPoints_AnyCardsRemaining() {
+    $cards_in_hands = [
+      ['type' => CLUB, 'type_arg' => 14],
+      ['type' => DIAMOND, 'type_arg' => 7],
+      ['type' => DIAMOND, 'type_arg' => 10],
+      ['type' => DIAMOND, 'type_arg' => 14],
+    ];
+
+    $scorer = new GLTParliamentScorer();
+
+    $actual = $scorer->remainingPoints($cards_in_hands);
+
+    $this->assertTrue($actual);
+  }
 }

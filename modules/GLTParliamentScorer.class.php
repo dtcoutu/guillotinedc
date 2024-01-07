@@ -3,7 +3,14 @@
 require_once('GLTScorer.interface.php');
 
 class GLTParliamentScorer implements GLTScorer {
-  function score(array $player_ids, array $won_cards) {
+  function remainingPoints(array $cards_in_hands): bool {
+    if (count($cards_in_hands) > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  function score(array $player_ids, array $won_cards): array {
     $player_to_points = [];
     $player_card_counts = [];
     foreach ($player_ids as $id) {
@@ -15,7 +22,7 @@ class GLTParliamentScorer implements GLTScorer {
       $player_id = $card['location_arg'];
 
       // Find K of hearts
-      if ($card['type'] == HEART && $card['type_arg'] == 13) {
+      if ($card['type'] == HEART && $card['type_arg'] == KING) {
         $player_to_points[$player_id] -= 10;
       }
 

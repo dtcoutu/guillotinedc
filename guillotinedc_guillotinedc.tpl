@@ -24,14 +24,15 @@
     
     Please REMOVE this comment before publishing your game on BGA
 -->
-<div id="playertables">
+<div id="playertables" class="whiteblock">
     <!-- BEGIN player -->
-    <div class="playertable whiteblock playertable_{DIR}">
+    <div class="playertable playertable_{DIR}">
         <div class="playertablename" style="color:#{PLAYER_COLOR}">{PLAYER_NAME}</div>
         <div id="dealer_p{PLAYER_ID}" class="playertableselectedgame">{SELECTED_GAME}</div>
         <div id="playertablecard_{PLAYER_ID}" class="playertablecard"></div>
     </div>
     <!-- END player -->
+    <div id="dominoesplayarea"></div>
 </div>
 
 <div id="myhand_wrap" class="whiteblock">
@@ -43,7 +44,7 @@
 <script type="text/javascript">
 
 // Javascript HTML templates
-var jstpl_card = '<div class="card cardontable" id="cardontable_${player_id}" style="background-position:-${x}px -${y}px"></div>';
+var jstpl_card = '<div class="card cardontable" id="cardontable_${card_id}" style="background-position:-${x}px -${y}px"></div>';
 var jstpl_game_display = '<div id="glt_game_${game_type}_${player_id}" class="game_display game_display_${game_type} ${played}">${game_abbr}</div>';
 </script>  
 

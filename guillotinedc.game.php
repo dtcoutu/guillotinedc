@@ -41,6 +41,7 @@ class guillotinedc extends Table
             DEALER => 10,
             SELECTED_GAME => 11,
             TRICK_SUIT => 12,
+            SPINNER => 13,
         ]);
 
         $this->cards = self::getNew("module.common.deck");
@@ -128,8 +129,10 @@ class guillotinedc extends Table
 
         $selected_game_id = self::getGameStateValue(SELECTED_GAME);
         $selected_game = null;
+        $selected_game_type = null;
         if ($selected_game_id) {
             $selected_game = $this->games[$selected_game_id]['name'];
+            $selected_game_type = $this->games[$selected_game_id]['type'];
         }
 
         // Get information about players
@@ -146,9 +149,9 @@ class guillotinedc extends Table
         $result[DEALER] = self::getGameStateValue(DEALER);
         $result[HAND] = $this->cards->getCardsInLocation(HAND, $current_player_id);
         $result[SELECTED_GAME] = $selected_game;
+        $result[SELECTED_GAME_TYPE] = $selected_game_type;
         $result[CARDS_ON_TABLE] = $this->cards->getCardsInLocation(CARDS_ON_TABLE);
-  
-        // TODO: Gather all information about current game situation (visible by player $current_player_id).
+        $result[SPINNER] = self::getGameStateValue(SPINNER);
   
         return $result;
     }
@@ -186,6 +189,30 @@ class guillotinedc extends Table
             if (array_column($hand, null, 'type')[$current_trick_suit] ?? false) {
                 throw new BgaUserException(self::_("You must follow suit if you are able to"));
             }
+        }
+    }
+
+    function checkPlayableCardForDominoes($current_card) {
+        $cards_on_table = $this->cards->getCardsInLocation(CARDS_ON_TABLE);
+
+        // This will be the first card on the table, so we're good
+        if (count($cards_on_table) == 0) return;
+        // The card is a spinner, so it's good to play
+        if (self::getGameStateValue(SPINNER) == $current_card['type_arg']) return;
+        
+        $cards_of_played_suit = array_filter($cards_on_table, function($card) use (&$current_card) {
+            return $card['type'] == $current_card['type'];
+        });
+
+        if (count($cards_of_played_suit) == 0) {
+            throw new BgaUserException(self::_("Your card cannot be played because the spinner for the suit hasn't been played yet"));
+        }
+
+        $played_card_values = array_column($cards_of_played_suit, null, 'type_arg');
+        if (!($played_card_values[$current_card['type_arg'] - 1] ?? false) &&
+            !($played_card_values[$current_card['type_arg'] + 1] ?? false))
+        {
+            throw new BgaUserException(self::_("Your card must be a spinner or one higher or lower in value than a card already played"));
         }
     }
 
@@ -312,7 +339,23 @@ class guillotinedc extends Table
             'game_type' => $selected_game,
         ]);
 
-        $this->gamestate->nextState("startHand");
+        if ($selected_game == 'dominoes') {
+            $this->gamestate->nextState("dominoesSelectSpinner");
+        } else {
+            $this->gamestate->nextState("startHand");
+        }
+    }
+
+    function pass() {
+        self::checkAction("pass");
+
+        // TODO: Need to ensure the user didn't have a card they could have played.
+
+        self::notifyAllPlayers('pass', clienttranslate('${player_name} passed'), [
+            'player_name' => self::getActivePlayerName()
+        ]);
+
+        $this->gamestate->nextState("turnTaken");
     }
 
     function playCard($card_id) {
@@ -321,23 +364,45 @@ class guillotinedc extends Table
         $player_id = self::getActivePlayerId();
         $current_card = $this->cards->getCard($card_id);
 
-        $this->checkPlayableCard($player_id, $current_card);
+        $selected_game_id = self::getGameStateValue(SELECTED_GAME);
+        if ($this->games[$selected_game_id]['type'] == "dominoes") {
+            $this->checkPlayableCardForDominoes($current_card);
 
-        $this->cards->moveCard($card_id, CARDS_ON_TABLE, $player_id);
+            $this->cards->moveCard($card_id, CARDS_ON_TABLE, $player_id);
 
-        if (!self::getGameStateValue(TRICK_SUIT)) self::setGameStateValue(TRICK_SUIT, $current_card['type']);
+            if (!self::getGameStateValue(SPINNER)) self::setGameStateValue(SPINNER, $current_card['type_arg']);
 
-        self::notifyAllPlayers('playCard', clienttranslate('${player_name} plays ${suit_displayed}${value_displayed}'), [
-            'player_name' => self::getActivePlayerName(),
-            'suit_displayed' => $this->suits[$current_card['type']]['name'],
-            'value_displayed' => $this->values_label[$current_card['type_arg']],
-            'suit' => $current_card['type'],
-            'value' => $current_card['type_arg'],
-            'card_id' => $card_id,
-            'player_id' => $player_id
-        ]);
+            self::notifyAllPlayers('playCardForDominoes', clienttranslate('${player_name} plays ${suit_displayed}${value_displayed}'), [
+                'player_name' => self::getActivePlayerName(),
+                'suit_displayed' => $this->suits[$current_card['type']]['name'],
+                'value_displayed' => $this->values_label[$current_card['type_arg']],
+                'suit' => $current_card['type'],
+                'value' => $current_card['type_arg'],
+                'card_id' => $card_id,
+                'player_id' => $player_id,
+                'spinner' => self::getGameStateValue(SPINNER)
+            ]);
 
-        $this->gamestate->nextState("cardPlayed");
+            $this->gamestate->nextState("turnTaken");
+        } else {
+            $this->checkPlayableCard($player_id, $current_card);
+
+            $this->cards->moveCard($card_id, CARDS_ON_TABLE, $player_id);
+    
+            if (!self::getGameStateValue(TRICK_SUIT)) self::setGameStateValue(TRICK_SUIT, $current_card['type']);
+    
+            self::notifyAllPlayers('playCard', clienttranslate('${player_name} plays ${suit_displayed}${value_displayed}'), [
+                'player_name' => self::getActivePlayerName(),
+                'suit_displayed' => $this->suits[$current_card['type']]['name'],
+                'value_displayed' => $this->values_label[$current_card['type_arg']],
+                'suit' => $current_card['type'],
+                'value' => $current_card['type_arg'],
+                'card_id' => $card_id,
+                'player_id' => $player_id
+            ]);
+
+            $this->gamestate->nextState("cardPlayed");
+        }
     }
 
     
@@ -350,23 +415,20 @@ class guillotinedc extends Table
         These methods function is to return some additional information that is specific to the current
         game state.
     */
+    function argDominoesPlayerTurn() {
+        $cards_in_hands = $this->cards->getCardsInLocation(HAND);
+        if (count($cards_in_hands) == 32) {
+            return [
+                'play_message' => clienttranslate('the spinner'),
+                'passable' => false,
+            ];
+        }
 
-    /*
-    
-    Example for game state "MyGameState":
-    
-    function argMyGameState()
-    {
-        // Get some values from the current game situation in database...
-    
-        // return values:
-        return array(
-            'variable1' => $value1,
-            'variable2' => $value2,
-            ...
-        );
-    }    
-    */
+        return [
+            'play_message' => clienttranslate('a card or pass'),
+            'passable' => true,
+        ];
+    }
 
     function argPlayerTurn() {
         // Determine cards that are eligble to play, for now just pass through
@@ -389,6 +451,11 @@ class guillotinedc extends Table
         Here, you can create methods defined as "game state actions" (see "action" property in states.inc.php).
         The action method of state X is called everytime the current game state is set to X.
     */
+    function stDominoesNextPlayer() {
+        $player_id = self::activeNextPlayer();
+        self::giveExtraTime($player_id);
+        $this->gamestate->nextState("nextPlayer");
+    }
     
     function stEndHand() {
         $players = self::loadPlayersBasicInfos();

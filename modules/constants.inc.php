@@ -16,6 +16,8 @@ define('ACE', 14);
 define('DEALER', 'dealer');
 define('TRICK_SUIT', 'trick_suit');
 define('SELECTED_GAME', 'selected_game');
+define('SELECTED_GAME_TYPE', 'selected_game_type');
+define('SPINNER', 'spinner');
 
 // Locations
 define('CARDS_WON', 'cardswon');

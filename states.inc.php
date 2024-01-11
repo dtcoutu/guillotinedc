@@ -79,7 +79,7 @@ $machinestates = [
         "type" => "activeplayer",
         "args" => "argSelectGame",
         "possibleactions" => ["gameSelection"],
-        "transitions" => ["startHand" => 20]
+        "transitions" => ["startHand" => 20, "dominoesSelectSpinner" => 41]
     ],
 
     20 => [
@@ -115,6 +115,26 @@ $machinestates = [
         "type" => "game",
         "action" => "stEndHand",
         "transitions" => ["nextHand" => 2]
+    ],
+
+    // Not sure that this is needed can key off gameSelection
+    41 => [
+        "name" => "dominoesPlayerTurn",
+        "description" => clienttranslate('${actplayer} must play ${play_message}'),
+        "descriptionmyturn" => clienttranslate('${you} must play ${play_message}'),
+        "type" => "activeplayer",
+        "args" => "argDominoesPlayerTurn",
+        "possibleactions" => ["playCard", "pass"],
+        "transitions" => ["turnTaken" => 42]
+    ],
+
+    42 => [
+        "name" => "dominioesNextPlayer",
+        "description" => "",
+        "type" => "game",
+        "action" => "stDominoesNextPlayer",
+        "updateGameProgression" => true,
+        "transitions" => ["nextPlayer" => 41, "endHand" => 30]
     ],
    
     // Final state.

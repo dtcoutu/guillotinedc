@@ -31,7 +31,6 @@ function (dojo, declare) {
             // Here, you can init the global variables of your user interface
             // Example:
             // this.myGlobalValue = 0;
-
         },
         
         /*
@@ -78,17 +77,17 @@ function (dojo, declare) {
             for (var suit = 1; suit <= 4; suit++) {
                 for (var value = 7; value <= 14; value++) {
                     const card_type_id = this.getCardUniqueId(suit, value);
-                    const card_weight = this.getCardWeight(suit, value);
+                    const card_weight = this.getCardWeight(suit, value, gamedatas.selected_game_type);
                     this.playerHand.addItemType(card_type_id, card_weight, g_gamethemeurl + 'img/cards.jpg', card_type_id);
                 }
             }
 
+            // Cards in player hand
+            this.displayHand(this.gamedatas.hand);
+
             if (this.prefs[100].value == 2) {
                 dojo.connect(this.playerHand, 'onChangeSelection', this, 'onHandCardSelect');
             }
-
-            // Cards in player hand
-            this.displayHand(this.gamedatas.hand);
 
             // Cards played on table
             for (let i in gamedatas.cardsontable) {
@@ -96,7 +95,12 @@ function (dojo, declare) {
                 const suit = card.type;
                 const value = card.type_arg;
                 var player_id = card.location_arg;
-                this.playCardOnTable(player_id, suit, value, card.id);
+
+                if (gamedatas.selected_game_type === 'dominoes') {
+                    this.playCardInCenter(player_id, suit, value, card.id, gamedatas.spinner);
+                } else {
+                    this.playCardOnTable(player_id, suit, value, card.id);
+                }
             }
 
             document.getElementById('dealer_p' + this.gamedatas.dealer).classList.add('show_dealer');
@@ -176,6 +180,10 @@ function (dojo, declare) {
             {            
                 switch( stateName )
                 {
+                    case 'dominoesPlayerTurn':
+                        if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
+                        if (args.passable) this.addActionButton('btnPass', _('Pass'), 'onBtnPass');
+                        break;
                     case 'playerTurn':
                         if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
                         break;
@@ -201,8 +209,12 @@ function (dojo, declare) {
             return (suit - 1) * 13 + (value - 2);
         },
 
-        getCardWeight: function(suit, value) {
+        getCardWeight: function(suit, value, selected_game_type) {
             var base_weight = this.getCardUniqueId(suit, value);
+
+            if (selected_game_type === 'dominoes') {
+                return base_weight;
+            }
 
             if (value == 10) {
                 return base_weight + 4;
@@ -222,30 +234,73 @@ function (dojo, declare) {
             }
         },
 
+        playCardInCenter : function(player_id, suit, value, card_id, spinner) {
+            dojo.place(this.format_block('jstpl_card', {
+                x : this.cardwidth * (value - 2),
+                y : this.cardheight * (suit - 1),
+                card_id : card_id
+            }), 'dominoesplayarea');
+            
+            if (player_id != this.player_id) {
+                // Some opponent played a card
+                // Move card from player panel
+                this.placeOnObject('cardontable_' + card_id, 'overall_player_board_' + player_id);
+            } else {
+                // You played a card. If it exists in your hand, move card from there and remove
+                // corresponding item
+                if ($('myhand_item_' + card_id)) {
+                    this.placeOnObject('cardontable_' + card_id, 'myhand_item_' + card_id);
+                    this.playerHand.removeFromStockById(card_id);
+                }
+            }
+
+            dojo.style('cardontable_' + card_id, 'z-index', value);
+            const x_pos = 20 + (suit-1) * 110;
+            const y_pos = 200 - ((value-7) * 20) - (Number(value) > Number(spinner) ? 30 : 0);
+
+            this.slideToObjectPos('cardontable_' + card_id, 'dominoesplayarea', x_pos, y_pos).play();
+
+            if (value === spinner) {
+                this.rotateTo('cardontable_' + card_id, 90);
+            }
+        },
+
         playCardOnTable : function(player_id, suit, value, card_id) {
             // player_id => direction
             dojo.place(this.format_block('jstpl_card', {
                 x : this.cardwidth * (value - 2),
                 y : this.cardheight * (suit - 1),
-                player_id : player_id
+                card_id : card_id
             }), 'playertablecard_' + player_id);
 
             if (player_id != this.player_id) {
                 // Some opponent played a card
                 // Move card from player panel
-                this.placeOnObject('cardontable_' + player_id, 'overall_player_board_' + player_id);
+                this.placeOnObject('cardontable_' + card_id, 'overall_player_board_' + player_id);
             } else {
                 // You played a card. If it exists in your hand, move card from there and remove
                 // corresponding item
 
                 if ($('myhand_item_' + card_id)) {
-                    this.placeOnObject('cardontable_' + player_id, 'myhand_item_' + card_id);
+                    this.placeOnObject('cardontable_' + card_id, 'myhand_item_' + card_id);
                     this.playerHand.removeFromStockById(card_id);
                 }
             }
 
             // In any case: move it to its final destination
-            this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
+            this.slideToObject('cardontable_' + card_id, 'playertablecard_' + player_id).play();
+        },
+
+        updateCardSorting : function(selected_game_type) {
+            const new_card_weights = [];
+            for (var suit = 1; suit <= 4; suit++) {
+                // instead of card_type_id I need to use the card_id for the key.
+                const card_type_id = this.getCardUniqueId(suit, 10);
+                const card_weight = this.getCardWeight(suit, 10, selected_game_type);
+                new_card_weights[card_type_id] = card_weight;
+            }
+
+            this.playerHand.changeItemsWeight(new_card_weights);
         },
 
         ///////////////////////////////////////////////////
@@ -261,6 +316,16 @@ function (dojo, declare) {
             _ make a call to the game server
         
         */
+        onBtnPass: function() {
+            const action = "pass";
+            if (!this.checkAction(action)) return;
+
+            this.ajaxcall(
+                "/" + this.game_name + "/" + this.game_name + "/" + action + ".html",
+                {lock: true}, this, function (result) {}, function (is_error) {}
+            );
+        },
+
         onBtnPlayCard: function() {
             const action = "playCard";
             if (!this.checkAction(action)) return;
@@ -318,13 +383,24 @@ function (dojo, declare) {
         {
             console.log( 'notifications subscriptions setup' );
 
-            const notif_list = ['earlyEnd', 'gameSelection', 'giveAllCardsToPlayer', 'newHand', 'newRound', 'newScores', 'playCard', 'trickWin'];
+            const notif_list = [
+                'earlyEnd',
+                'gameSelection',
+                'giveAllCardsToPlayer',
+                'newHand',
+                'newRound',
+                'newScores',
+                'playCard',
+                'playCardForDominoes',
+                'trickWin'
+            ];
             notif_list.forEach(s => dojo.subscribe(s, this, 'notif_' + s));
 
             this.notifqueue.setSynchronous('earlyEnd', 1000);
             this.notifqueue.setSynchronous('giveAllCardsToPlayer', 600);
             this.notifqueue.setSynchronous('newRound', 1000);
             this.notifqueue.setSynchronous('playCard', 100);
+            this.notifqueue.setSynchronous('playCardForDominoes', 100);
             this.notifqueue.setSynchronous('trickWin', 1000);
         },  
 
@@ -340,6 +416,8 @@ function (dojo, declare) {
         notif_gameSelection : function(notif) {
             document.getElementById('dealer_p' + notif.args.dealer_id).innerHTML = notif.args.game_name;
             document.getElementById('glt_game_' + notif.args.game_type + '_' + notif.args.dealer_id).classList.add('played');
+
+            this.updateCardSorting(notif.args.game_type);
         },
 
         notif_giveAllCardsToPlayer : function(notif) {
@@ -372,6 +450,10 @@ function (dojo, declare) {
 
         notif_playCard : function(notif) {
             this.playCardOnTable(notif.args.player_id, notif.args.suit, notif.args.value, notif.args.card_id);
+        },
+
+        notif_playCardForDominoes : function(notif) {
+            this.playCardInCenter(notif.args.player_id, notif.args.suit, notif.args.value, notif.args.card_id, notif.args.spinner);
         },
 
         notif_trickWin : function(notif) {

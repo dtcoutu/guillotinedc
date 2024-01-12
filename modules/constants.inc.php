@@ -13,11 +13,14 @@ define('KING', 13);
 define('ACE', 14);
 
 // Game State Variables
+define('ACE_PLAYED', 'ace_played');
 define('DEALER', 'dealer');
-define('TRICK_SUIT', 'trick_suit');
+define('OUT_FIRST', 'out_first');
+define('OUT_SECOND', 'out_second');
 define('SELECTED_GAME', 'selected_game');
 define('SELECTED_GAME_TYPE', 'selected_game_type');
 define('SPINNER', 'spinner');
+define('TRICK_SUIT', 'trick_suit');
 
 // Locations
 define('CARDS_WON', 'cardswon');

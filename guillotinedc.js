@@ -384,6 +384,7 @@ function (dojo, declare) {
             console.log( 'notifications subscriptions setup' );
 
             const notif_list = [
+                'cleanUp',
                 'earlyEnd',
                 'gameSelection',
                 'giveAllCardsToPlayer',
@@ -402,7 +403,11 @@ function (dojo, declare) {
             this.notifqueue.setSynchronous('playCard', 100);
             this.notifqueue.setSynchronous('playCardForDominoes', 100);
             this.notifqueue.setSynchronous('trickWin', 1000);
-        },  
+        },
+
+        notif_cleanUp: function(notif) {
+            document.querySelectorAll('.cardontable').forEach(e => this.slideToObjectAndDestroy(e, 'playertables'));
+        },
 
         notif_earlyEnd: function(notif) {
             for (let i in notif.args.remaining_cards) {

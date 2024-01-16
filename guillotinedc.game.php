@@ -219,6 +219,49 @@ class guillotinedc extends Table
         }
     }
 
+    function getPlayableCardsForDominoes($hand, $played_cards) {
+        // Nothing played then everything is possible
+        if (count($played_cards) === 0) return array_keys($hand);
+
+        // Initialize possible cards to the spinners.
+        $spinner_value = self::getGameStateValue(SPINNER);
+        $possible_cards = [];
+        foreach ($this->suits as $suit_id => $suit) {
+            $possible_cards[$suit_id]['high'] = $spinner_value;
+            $possible_cards[$suit_id]['low'] = $spinner_value;
+        }
+
+        // Find possible cards one higher and one lower than those played.
+        foreach ($played_cards as $card) {
+            $suit = $card['type'];
+            $value = $card['type_arg'];
+            $high_value = (int)$value + 1;
+            $low_value = (int)$value - 1;
+
+            if ($possible_cards[$suit]['high'] < $high_value) {
+                $possible_cards[$suit]['high'] = $high_value;
+            }
+            if ($possible_cards[$suit]['low'] > $low_value) {
+                $possible_cards[$suit]['low'] = $low_value;
+            }
+        }
+
+        // Find cards in the player's hand that match the possible cards.
+        $playable_card_ids = [];
+        foreach ($hand as $card) {
+            $suit = $card['type'];
+            $value = $card['type_arg'];
+            if (($value == $possible_cards[$suit]['high']) ||
+                ($value == $possible_cards[$suit]['low']) ||
+                ($value == $spinner_value))
+            {
+                $playable_card_ids[] = $card['id'];
+            }
+        }
+
+        return $playable_card_ids;
+    }
+
     function gameStates($player_id, $available_only = false) {
         $game_sql = "SELECT player_game_id, player_id, game_id, played FROM player_game WHERE player_id=$player_id";
 
@@ -452,20 +495,41 @@ class guillotinedc extends Table
     */
     function argDominoesPlayerTurn() {
         $cards_in_hands = $this->cards->getCardsInLocation(HAND);
+        $hand = $this->cards->getCardsInLocation(HAND, self::getActivePlayerId());
+
         if (count($cards_in_hands) == 32) {
             return [
-                'play_message' => clienttranslate('the spinner'),
+                'play_message' => clienttranslate('play the spinner'),
                 'passable' => false,
+                '_private' => ['active' => ['playable_cards' => array_keys($hand)]]
             ];
         }
 
-        $play_message = clienttranslate('a card or pass');
-        if (self::getGameStateValue(ACE_PLAYED)) {
-            $play_message = $play_message . clienttranslate(' (using Ace)');
+        $cards_on_table = $this->cards->getCardsInLocation(CARDS_ON_TABLE);
+        $playable_card_ids = $this->getPlayableCardsForDominoes($hand, $cards_on_table);
+
+        if (count($playable_card_ids) === 0) {
+            // the player must pass
+            return [
+                'play_message' => clienttranslate('pass'),
+                'passable' => true,
+                '_private' => ['active' => ['playable_cards' => $playable_card_ids]]
+            ];
         }
+
+        // the player must play a card
+        $play_message = clienttranslate('play a card');
+        $passable = false;
+
+        if (self::getGameStateValue(ACE_PLAYED)) {
+            $play_message = $play_message . clienttranslate(' or pass (using Ace)');
+            $passable = true;
+        }
+
         return [
             'play_message' => $play_message,
-            'passable' => true,
+            'passable' => $passable,
+            '_private' => ['active' => ['playable_cards' => $playable_card_ids]]
         ];
     }
 
@@ -511,14 +575,11 @@ class guillotinedc extends Table
         $players = self::loadPlayersBasicInfos();
         $player_id = self::getActivePlayerId();
 
-        // Being the first person out while using an Ace causes some issues.
-        // - It doesn't auto pass the player.
-        // - It also ends the game early and gives that player second place scoring...
-        // - Bonus should notify players when a person goes out of cards and show in UI some where
+        $first_player_out = self::getGameStateValue(OUT_FIRST);
         $hand = $this->cards->getCardsInLocation(HAND, $player_id);
-        if (count($hand) === 0) {
+        if (count($hand) === 0 && $player_id != $first_player_out) {
             $order = '';
-            if (self::getGameStateValue(OUT_FIRST)) {
+            if ($first_player_out) {
                 self::setGameStateValue(OUT_SECOND, $player_id);
                 $end_hand = true;
                 $order = clienttranslate('second');
@@ -540,8 +601,13 @@ class guillotinedc extends Table
             $this->gamestate->nextState("endHand");
         } else {
             if (!self::getGameStateValue(ACE_PLAYED)) {
-                $player_id = self::activeNextPlayer();
-                self::giveExtraTime($player_id);
+                $next_player = self::activeNextPlayer();
+
+                if ($next_player === $first_player_out) {
+                    $next_player = self::activeNextPlayer();
+                }
+
+                self::giveExtraTime($next_player);
             }
 
             $this->gamestate->nextState("nextPlayer");

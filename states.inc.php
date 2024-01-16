@@ -119,8 +119,8 @@ $machinestates = [
 
     41 => [
         "name" => "dominoesPlayerTurn",
-        "description" => clienttranslate('${actplayer} must play ${play_message}'),
-        "descriptionmyturn" => clienttranslate('${you} must play ${play_message}'),
+        "description" => clienttranslate('${actplayer} must ${play_message}'),
+        "descriptionmyturn" => clienttranslate('${you} must ${play_message}'),
         "type" => "activeplayer",
         "args" => "argDominoesPlayerTurn",
         "possibleactions" => ["playCard", "pass"],

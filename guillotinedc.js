@@ -138,6 +138,17 @@ function (dojo, declare) {
                     }
                 }
                 break;
+            case 'dominoesPlayerTurn':
+                if (this.isCurrentPlayerActive()) {
+                    const playable_cards = args.args._private.playable_cards;
+                    const all_cards = this.playerHand.getAllItems();
+                    for (let i in all_cards) {
+                        if (playable_cards.includes(all_cards[i].id)) {
+                            document.getElementById('myhand_item_' + all_cards[i].id).classList.add('playable');
+                        }
+                    }
+                }
+                break;
             case 'dummmy':
                 break;
             }
@@ -181,8 +192,9 @@ function (dojo, declare) {
                 switch( stateName )
                 {
                     case 'dominoesPlayerTurn':
-                        if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
-                        if (args.passable) this.addActionButton('btnPass', _('Pass'), 'onBtnPass');
+                        if (args.passable) {
+                            this.addActionButton('btnPass', _('Pass'), 'onBtnPass');
+                        } else if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
                         break;
                     case 'playerTurn':
                         if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');

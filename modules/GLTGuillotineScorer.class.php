@@ -1,16 +1,9 @@
 <?php
 
 require_once('GLTScorer.interface.php');
+require_once('constants.inc.php');
 
 class GLTGuillotineScorer implements GLTScorer {
-  private int $first_trick_winner;
-  private int $last_trick_winner;
-
-  function __construct(int $first_trick_winner, int $last_trick_winner) {
-    $this->first_trick_winner = $first_trick_winner;
-    $this->last_trick_winner = $last_trick_winner;
-  }
-  
   function remainingPoints(array $cards_in_hands): bool {
     if (count($cards_in_hands) > 0) {
       return true;
@@ -18,14 +11,14 @@ class GLTGuillotineScorer implements GLTScorer {
     return false;
   }
 
-  function score(array $player_ids, array $won_cards): array {
+  function score(array $player_ids, array $won_cards, array $trick_winners = null): array {
     $player_to_points = [];
     foreach ($player_ids as $player_id) {
       $player_to_points[$player_id] = 0;
     }
 
-    $player_to_points[$this->first_trick_winner] += 5;
-    $player_to_points[$this->last_trick_winner] += 5;
+    $player_to_points[$trick_winners[FIRST_TRICK_WINNER]] += 5;
+    $player_to_points[$trick_winners[LAST_TRICK_WINNER]] += 5;
 
     foreach ($won_cards as $card) {
       $player_id = $card['location_arg'];

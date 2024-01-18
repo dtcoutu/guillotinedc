@@ -45,6 +45,8 @@ class guillotinedc extends Table
             ACE_PLAYED => 14,
             OUT_FIRST => 15,
             OUT_SECOND => 16,
+            FIRST_TRICK_WINNER => 17,
+            LAST_TRICK_WINNER => 18,
         ]);
 
         $this->cards = self::getNew("module.common.deck");
@@ -302,9 +304,12 @@ class guillotinedc extends Table
             case 4:
                 $scorer = new GLTRoyaltyScorer();
                 break;
+            case 6:
+                $scorer = new GLTGuillotineScorer();
+                break;
             
             default:
-                throw new BgaUserException(sprintf(self::_("The selected game id, %s, does not have a scorer"), $selected_game_id));
+                throw new BgaUserException(sprintf(self::_("Report this to the developer - The selected game id, %s, does not have a scorer"), $selected_game_id));
                 break;
         }
 
@@ -353,6 +358,10 @@ class guillotinedc extends Table
         self::setGameStateValue(OUT_FIRST, 0);
         self::setGameStateValue(OUT_SECOND, 0);
         self::setGameStateValue(SPINNER, 0);
+
+        // Guillotine
+        self::setGameStateValue(FIRST_TRICK_WINNER, 0);
+        self::setGameStateValue(LAST_TRICK_WINNER, 0);
     }
 
     function sortCards ($a, $b): int {
@@ -619,7 +628,18 @@ class guillotinedc extends Table
         $cards = $this->cards->getCardsInLocation(CARDS_WON);
         $scorer = $this->getScorer();
 
-        $player_to_points = $scorer->score(array_keys($players), $cards);
+        $selected_game_id = self::getGameStateValue(SELECTED_GAME);
+
+        $trick_winners = null;
+        if ($selected_game_id == 6) {
+            // Guillotine needs to know the winner of the first and last tricks
+            $trick_winners = [
+                FIRST_TRICK_WINNER => self::getGameStateValue(FIRST_TRICK_WINNER),
+                LAST_TRICK_WINNER => self::getGameStateValue(LAST_TRICK_WINNER)
+            ];
+        }
+
+        $player_to_points = $scorer->score(array_keys($players), $cards, $trick_winners);
 
         $this->updateScores($players, $player_to_points);
     }
@@ -671,6 +691,12 @@ class guillotinedc extends Table
             $winning_player_id = $winning_card['location_arg'];
 
             $this->gamestate->changeActivePlayer($winning_player_id);
+
+            // Guillotine is the only game that worries about this.
+            if ($this->cards->countCardInLocation(CARDS_WON) == 0) {
+                self::setGameStateValue(FIRST_TRICK_WINNER, $winning_player_id);
+            }
+
             $this->cards->moveAllCardsInLocation(CARDS_ON_TABLE, CARDS_WON, null, $winning_player_id);
 
             $players = self::loadPlayersBasicInfos();
@@ -683,6 +709,8 @@ class guillotinedc extends Table
             ]);
 
             if ($this->cards->countCardInLocation(HAND) == 0) {
+                // Guillotine is the only game that cards about LAST_TRICK_WINNER
+                self::setGameStateValue(LAST_TRICK_WINNER, $winning_player_id);
                 $this->gamestate->nextState("endHand");
             } else {
                 $scorer = $this->getScorer();

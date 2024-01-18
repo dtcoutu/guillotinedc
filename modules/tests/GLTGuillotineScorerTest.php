@@ -41,9 +41,14 @@ final class GLTGuillotineScorerTest extends TestCase {
       ['type' => 4, 'type_arg' => 14, 'location_arg' => 1],
     ];
 
-    $scorer = new GLTGuillotineScorer(1, 1);
+    $trick_winners = [
+      FIRST_TRICK_WINNER => 1,
+      LAST_TRICK_WINNER => 1
+    ];
 
-    $actual = $scorer->score($players, $won_cards);
+    $scorer = new GLTGuillotineScorer();
+
+    $actual = $scorer->score($players, $won_cards, $trick_winners);
 
     $expected = [
       1 => 100,
@@ -92,9 +97,14 @@ final class GLTGuillotineScorerTest extends TestCase {
       ['type' => 4, 'type_arg' => 14, 'location_arg' => 3],
     ];
 
-    $scorer = new GLTGuillotineScorer(2, 4);
+    $trick_winners = [
+      FIRST_TRICK_WINNER => 2,
+      LAST_TRICK_WINNER => 4
+    ];
 
-    $actual = $scorer->score($players, $won_cards);
+    $scorer = new GLTGuillotineScorer();
+
+    $actual = $scorer->score($players, $won_cards, $trick_winners);
 
     $expected = [
       1 => 40,
@@ -109,7 +119,7 @@ final class GLTGuillotineScorerTest extends TestCase {
   function testRemainingPoints() {
     $cards_in_hands = [];
 
-    $scorer = new GLTGuillotineScorer(2, 4);
+    $scorer = new GLTGuillotineScorer();
 
     $actual = $scorer->remainingPoints($cards_in_hands);
 
@@ -125,7 +135,7 @@ final class GLTGuillotineScorerTest extends TestCase {
     ];
 
     // TODO: This convinces me that those shouldn't be part of the constructor.
-    $scorer = new GLTGuillotineScorer(2, 4);
+    $scorer = new GLTGuillotineScorer();
 
     $actual = $scorer->remainingPoints($cards_in_hands);
 

@@ -15,6 +15,8 @@ define('ACE', 14);
 // Game State Variables
 define('ACE_PLAYED', 'ace_played');
 define('DEALER', 'dealer');
+define('FIRST_TRICK_WINNER', 'first_trick');
+define('LAST_TRICK_WINNER', 'last_trick');
 define('OUT_FIRST', 'out_first');
 define('OUT_SECOND', 'out_second');
 define('SELECTED_GAME', 'selected_game');

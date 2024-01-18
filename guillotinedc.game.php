@@ -173,9 +173,11 @@ class guillotinedc extends Table
     */
     function getGameProgression()
     {
-        // TODO: compute and return the game progression
+        $game_sql = "SELECT count(*) count FROM player_game WHERE played = 1";
 
-        return 0;
+        $played_games = self::getCollectionFromDb($game_sql);
+
+        return (count($played_games) / 24) * 100;
     }
 
 

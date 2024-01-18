@@ -105,7 +105,6 @@ $machinestates = [
         "description" => "",
         "type" => "game",
         "action" => "stNextPlayer",
-        "updateGameProgression" => true,
         "transitions" => ["nextPlayer" => 21, "nextTrick" => 20, "endHand" => 30]
     ],
 
@@ -132,7 +131,6 @@ $machinestates = [
         "description" => "",
         "type" => "game",
         "action" => "stDominoesNextPlayer",
-        "updateGameProgression" => true,
         "transitions" => ["nextPlayer" => 41, "endHand" => 43]
     ],
 

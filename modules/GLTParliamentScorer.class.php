@@ -1,10 +1,17 @@
 <?php
 
 require_once('GLTScorer.interface.php');
+require_once('constants.inc.php');
 
 class GLTParliamentScorer implements GLTScorer {
-  function remainingPoints(array $cards_in_hands): bool {
-    if (count($cards_in_hands) > 0) {
+  function gameStat(): string {
+    return POINTS_FROM_PARLIAMENT;
+  }
+
+  function remainingPoints(array $player_ids, array $won_cards): bool {
+    $player_to_points = $this->score($player_ids, $won_cards);
+
+    if (array_sum(array_values($player_to_points)) != $this->scoreTotal()) {
       return true;
     }
     return false;
@@ -34,5 +41,9 @@ class GLTParliamentScorer implements GLTScorer {
     }
 
     return $player_to_points;
+  }
+
+  function scoreTotal(): int {
+    return -50;
   }
 }

@@ -104,9 +104,13 @@ class guillotinedc extends Table
         $this->cards->createCards($cards, 'deck');
 
         // Init game statistics
-        // (note: statistics used in this file must be defined in your stats.inc.php file)
-        //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
-        //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
+        self::initStat('player', POINTS_FROM_PARLIAMENT, 0);
+        self::initStat('player', POINTS_FROM_SPADES, 0);
+        self::initStat('player', POINTS_FROM_QUEENS, 0);
+        self::initStat('player', POINTS_FROM_ROYALTY, 0);
+        self::initStat('player', POINTS_FROM_DOMINOES, 0);
+        self::initStat('player', POINTS_FROM_GUILLOTINE, 0);
+        self::initStat('player', POINTS_ON_OWN_CALLS, 0);
 
         // TODO: setup the initial game situation here
 
@@ -175,9 +179,9 @@ class guillotinedc extends Table
     {
         $game_sql = "SELECT count(*) count FROM player_game WHERE played = 1";
 
-        $played_games = self::getCollectionFromDb($game_sql);
+        $played_games = self::getUniqueValueFromDB($game_sql);
 
-        return (count($played_games) / 24) * 100;
+        return ($played_games / 24) * 100;
     }
 
 
@@ -188,6 +192,56 @@ class guillotinedc extends Table
     /*
         In this space, you can put any utility methods useful for your game logic
     */
+    function advanceGameState() {
+        $players = self::loadPlayersBasicInfos();
+        $player_ids = array_keys($players);
+
+        for ($i=0; $i<20; $i++) {
+            $current_player_id = $player_ids[($i % 4)];
+            $current_game_id = ($i % 6) + 1;
+            // After 12 the games being played repeat, so offsetting it by one.
+            if ($i >= 12) {
+                $current_game_id = (($i + 1) % 6) + 1;
+            }
+            $current_game = $this->games[$current_game_id];
+
+            // Update games played
+            $this->recordSelectedGame($current_player_id, $current_game_id);
+
+            // Update scores
+            $player_to_points = [];
+            foreach ($player_ids as $player_id) {
+                $player_to_points[$player_id] = 0;
+            }
+
+            $point_total = 0;
+            switch ($current_game_id) {
+                case 1:
+                    $point_total = -50;
+                    break;
+                case 2:
+                    $point_total = 30;
+                    break;
+                case 3:
+                    $point_total = 30;
+                    break;
+                case 4:
+                    $point_total = 30;
+                    break;
+                case 5:
+                    $point_total = -40;
+                    break;
+                case 6:
+                    $point_total = 100;
+                    break;
+            }
+
+            $player_to_points[$current_player_id] = $point_total;
+
+            $this->updateScores($players, $player_to_points, 'points_from_'.$current_game['type']);
+        }
+    }
+
     function checkPlayableCard($player_id, $current_card) {
         $current_trick_suit = self::getGameStateValue(TRICK_SUIT);
         $hand = $this->cards->getPlayerHand($player_id);
@@ -370,8 +424,22 @@ class guillotinedc extends Table
         return $a['type'] * 100 + $a['type_arg'] <=> $b['type'] * 100 + $b['type_arg'];
     }
 
-    function updateScores($players, $player_to_points) {
+    function updateScores($players, $player_to_points, $game_stat) {
+        $dealer_id = self::getGameStateValue(DEALER);
+        $player_1_id = self::getPlayerAfter($dealer_id);
+        $player_2_id = self::getPlayerAfter($player_1_id);
+        $player_3_id = self::getPlayerAfter($player_2_id);
+
         foreach ($player_to_points as $player_id => $points) {
+            self::incStat($points, $game_stat, $player_id);
+
+            $player_call = POINTS_ON_OWN_CALLS;
+            if ($player_id == $player_1_id) $player_call = POINTS_ON_PLAYER_3_CALLS;
+            else if ($player_id == $player_2_id) $player_call = POINTS_ON_PLAYER_2_CALLS;
+            else if ($player_id == $player_3_id) $player_call = POINTS_ON_PLAYER_1_CALLS;
+
+            self::incStat($points, $player_call, $player_id);
+
             $sql = "UPDATE player SET player_score=player_score+$points WHERE player_id='$player_id'";
             self::DbQuery($sql);
             self::notifyAllPlayers("points", clienttranslate('${player_name} gained ${points} points'), [
@@ -383,8 +451,6 @@ class guillotinedc extends Table
 
         $new_scores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
         self::notifyAllPlayers("newScores", '', ['newScores' => $new_scores]);
-
-        $this->gamestate->nextState("nextHand");
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -511,7 +577,8 @@ class guillotinedc extends Table
         if (count($cards_in_hands) == 32) {
             return [
                 'play_message' => clienttranslate('play the spinner'),
-                'passable' => false,
+                'must_pass' => false,
+                'ace_played' => false,
                 '_private' => ['active' => ['playable_cards' => array_keys($hand)]]
             ];
         }
@@ -523,23 +590,27 @@ class guillotinedc extends Table
             // the player must pass
             return [
                 'play_message' => clienttranslate('pass'),
-                'passable' => true,
+                'must_pass' => true,
+                'ace_played' => false,
                 '_private' => ['active' => ['playable_cards' => $playable_card_ids]]
             ];
         }
 
         // the player must play a card
         $play_message = clienttranslate('play a card');
-        $passable = false;
+        $must_pass = false;
+        $ace_played = false;
 
         if (self::getGameStateValue(ACE_PLAYED)) {
             $play_message = $play_message . clienttranslate(' or pass (using Ace)');
-            $passable = true;
+            $must_pass = false;
+            $ace_played = true;
         }
 
         return [
             'play_message' => $play_message,
-            'passable' => $passable,
+            'must_pass' => $must_pass,
+            'ace_played' => $ace_played,
             '_private' => ['active' => ['playable_cards' => $playable_card_ids]]
         ];
     }
@@ -565,6 +636,18 @@ class guillotinedc extends Table
         Here, you can create methods defined as "game state actions" (see "action" property in states.inc.php).
         The action method of state X is called everytime the current game state is set to X.
     */
+    function stCheckEndGame() {
+        $game_sql = "SELECT count(*) count FROM player_game WHERE played = 1";
+
+        $played_games = self::getUniqueValueFromDB($game_sql);
+
+        if ($played_games == 24) {
+            $this->gamestate->nextState("endGame");
+        } else {
+            $this->gamestate->nextState("newHand");
+        }
+    }
+
     function stDominoesEndHand() {
         $players = self::loadPlayersBasicInfos();
         $player_to_points = [];
@@ -577,7 +660,8 @@ class guillotinedc extends Table
 
         self::notifyAllPlayers('cleanUp', '', []);
 
-        $this->updateScores($players, $player_to_points);
+        $this->updateScores($players, $player_to_points, POINTS_FROM_DOMINOES);
+        $this->gamestate->nextState("nextHand");
     }
     
     function stDominoesNextPlayer() {
@@ -614,7 +698,7 @@ class guillotinedc extends Table
             if (!self::getGameStateValue(ACE_PLAYED)) {
                 $next_player = self::activeNextPlayer();
 
-                if ($next_player === $first_player_out) {
+                if ($next_player == $first_player_out) {
                     $next_player = self::activeNextPlayer();
                 }
 
@@ -643,12 +727,11 @@ class guillotinedc extends Table
 
         $player_to_points = $scorer->score(array_keys($players), $cards, $trick_winners);
 
-        $this->updateScores($players, $player_to_points);
+        $this->updateScores($players, $player_to_points, $scorer->gameStat());
+        $this->gamestate->nextState("nextHand");
     }
 
     function stNewHand() {
-        // TODO: increament hand count stat
-
         $new_dealer_id = self::getPlayerAfter(self::getGameStateValue(DEALER));
         self::setGameStateValue(DEALER, $new_dealer_id);
         $this->gamestate->changeActivePlayer($new_dealer_id);
@@ -716,10 +799,10 @@ class guillotinedc extends Table
                 $this->gamestate->nextState("endHand");
             } else {
                 $scorer = $this->getScorer();
-                $cards_in_hands = $this->cards->getCardsInLocation(HAND);
-                if (!$scorer->remainingPoints($cards_in_hands)) {
+                $players = $this->loadPlayersBasicInfos();
+                $won_cards = $this->cards->getCardsInLocation(CARDS_WON);
+                if (!$scorer->remainingPoints(array_keys($players), $won_cards)) {
                     $cards_left = [];
-                    $players = $this->loadPlayersBasicInfos();
                     foreach ($players as $player_id => $player) {
                         $cards_left_list = [];
                         $hand = $this->cards->getCardsInLocation(HAND, $player_id);
@@ -733,7 +816,7 @@ class guillotinedc extends Table
 
                     self::notifyAllPlayers('earlyEnd', clienttranslate('Ending the hand early as all scoring cards are out<br><br>Cards left:<br>${cards_left}'), [
                         'cards_left' => $cards_left_final,
-                        'remaining_cards' => $cards_in_hands,
+                        'remaining_cards' => $this->cards->getCardsInLocation(HAND),
                     ]);
                     $this->gamestate->nextState("endHand");
                 } else {

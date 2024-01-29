@@ -25,6 +25,7 @@
  */
   
 require_once( APP_BASE_PATH."view/common/game.view.php" );
+require_once('modules/constants.inc.php');
   
 class view_guillotinedc_guillotinedc extends game_view
 {
@@ -45,6 +46,12 @@ class view_guillotinedc_guillotinedc extends game_view
 
         /*********** Place your code below:  ************/
 
+        $selected_game_id = $this->game->getGameStateValue(SELECTED_GAME);
+        $selected_game = _("Selecting game...");
+        if ($selected_game_id) {
+            $selected_game = $this->game->games[$selected_game_id]['name'];
+        }
+
         $this->tpl['MY_HAND'] = self::_("My hand");
 
         $directions = ['S', 'W', 'N', 'E'];
@@ -59,7 +66,7 @@ class view_guillotinedc_guillotinedc extends game_view
                     "PLAYER_NAME" => $info['player_name'],
                     "PLAYER_COLOR" => $info['player_color'],
                     "DIR" => $dir,
-                    "SELECTED_GAME" => _("Selecting game..."),
+                    "SELECTED_GAME" => $selected_game,
                 ]);
             }
         } else {
@@ -72,7 +79,7 @@ class view_guillotinedc_guillotinedc extends game_view
                     "PLAYER_NAME" => $players[$player_id]['player_name'],
                     "PLAYER_COLOR" => $players[$player_id]['player_color'],
                     "DIR" => $dir,
-                    "SELECTED_GAME" => self::_("Selecting game..."),
+                    "SELECTED_GAME" => $selected_game,
                 ]);
                 $player_id = $this->game->getPlayerAfter($player_id);
             }

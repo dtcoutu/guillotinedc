@@ -117,68 +117,72 @@ final class GLTRoyaltyScorerTest extends TestCase {
   }
 
   function testRemainingPoints() {
-    $cards_in_hands = [];
+    $players = [1,2,3,4];
+    $won_cards = [];
 
     $scorer = new GLTRoyaltyScorer();
 
-    $actual = $scorer->remainingPoints($cards_in_hands);
+    $actual = $scorer->remainingPoints($players, $won_cards);
 
-    $this->assertFalse($actual);
+    $this->assertTrue($actual);
   }
 
   function testRemainingPoints_QueenOfSpadesRemaining() {
-    $cards_in_hands = [
-      ['type' => SPADE, 'type_arg' => 9],
-      ['type' => SPADE, 'type_arg' => 12],
-      ['type' => HEART, 'type_arg' => 9],
-      ['type' => CLUB, 'type_arg' => 11],
-      ['type' => CLUB, 'type_arg' => 14],
-      ['type' => DIAMOND, 'type_arg' => 7],
-      ['type' => DIAMOND, 'type_arg' => 10],
-      ['type' => DIAMOND, 'type_arg' => 14],
+    $players = [1,2,3,4];
+    $won_cards = [
+      ['type' => SPADE, 'type_arg' => 9, 'location_arg' => 1],
+      ['type' => SPADE, 'type_arg' => JACK, 'location_arg' => 1],
+      ['type' => HEART, 'type_arg' => KING, 'location_arg' => 1],
+      ['type' => CLUB, 'type_arg' => JACK, 'location_arg' => 1],
+      ['type' => CLUB, 'type_arg' => ACE, 'location_arg' => 1],
+      ['type' => DIAMOND, 'type_arg' => 7, 'location_arg' => 1],
+      ['type' => DIAMOND, 'type_arg' => 10, 'location_arg' => 1],
+      ['type' => DIAMOND, 'type_arg' => ACE, 'location_arg' => 1],
     ];
 
     $scorer = new GLTRoyaltyScorer();
 
-    $actual = $scorer->remainingPoints($cards_in_hands);
+    $actual = $scorer->remainingPoints($players, $won_cards);
 
     $this->assertTrue($actual);
   }
 
   function testRemainingPoints_KingOfHeartsRemaining() {
-    $cards_in_hands = [
-      ['type' => SPADE, 'type_arg' => 9],
-      ['type' => SPADE, 'type_arg' => 11],
-      ['type' => HEART, 'type_arg' => 13],
-      ['type' => CLUB, 'type_arg' => 11],
-      ['type' => CLUB, 'type_arg' => 14],
-      ['type' => DIAMOND, 'type_arg' => 7],
-      ['type' => DIAMOND, 'type_arg' => 10],
-      ['type' => DIAMOND, 'type_arg' => 14],
+    $players = [1,2,3,4];
+    $won_cards = [
+      ['type' => SPADE, 'type_arg' => 9, 'location_arg' => 1],
+      ['type' => SPADE, 'type_arg' => JACK, 'location_arg' => 1],
+      ['type' => SPADE, 'type_arg' => QUEEN, 'location_arg' => 1],
+      ['type' => CLUB, 'type_arg' => JACK, 'location_arg' => 1],
+      ['type' => CLUB, 'type_arg' => ACE, 'location_arg' => 2],
+      ['type' => DIAMOND, 'type_arg' => 7, 'location_arg' => 2],
+      ['type' => DIAMOND, 'type_arg' => 10, 'location_arg' => 2],
+      ['type' => DIAMOND, 'type_arg' => ACE, 'location_arg' => 2],
     ];
 
     $scorer = new GLTRoyaltyScorer();
 
-    $actual = $scorer->remainingPoints($cards_in_hands);
+    $actual = $scorer->remainingPoints($players, $won_cards);
 
     $this->assertTrue($actual);
   }
 
   function testRemainingPoints_NoPointsRemaining() {
-    $cards_in_hands = [
-      ['type' => SPADE, 'type_arg' => 9],
-      ['type' => SPADE, 'type_arg' => 11],
-      ['type' => HEART, 'type_arg' => 9],
-      ['type' => CLUB, 'type_arg' => 11],
-      ['type' => CLUB, 'type_arg' => 14],
-      ['type' => DIAMOND, 'type_arg' => 7],
-      ['type' => DIAMOND, 'type_arg' => 10],
-      ['type' => DIAMOND, 'type_arg' => 14],
+    $players = [1,2,3,4];
+    $won_cards = [
+      ['type' => SPADE, 'type_arg' => 9, 'location_arg' => 3],
+      ['type' => SPADE, 'type_arg' => QUEEN, 'location_arg' => 3],
+      ['type' => HEART, 'type_arg' => KING, 'location_arg' => 3],
+      ['type' => CLUB, 'type_arg' => JACK, 'location_arg' => 3],
+      ['type' => CLUB, 'type_arg' => ACE, 'location_arg' => 3],
+      ['type' => DIAMOND, 'type_arg' => 7, 'location_arg' => 3],
+      ['type' => DIAMOND, 'type_arg' => 10, 'location_arg' => 3],
+      ['type' => DIAMOND, 'type_arg' => ACE, 'location_arg' => 3],
     ];
 
     $scorer = new GLTRoyaltyScorer();
 
-    $actual = $scorer->remainingPoints($cards_in_hands);
+    $actual = $scorer->remainingPoints($players, $won_cards);
 
     $this->assertFalse($actual);
   }

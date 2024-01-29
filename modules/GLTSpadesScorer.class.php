@@ -4,13 +4,16 @@ require_once('GLTScorer.interface.php');
 require_once('constants.inc.php');
 
 class GLTSpadesScorer implements GLTScorer {
-  function remainingPoints(array $cards_in_hands): bool {
-    foreach ($cards_in_hands as $card) {
-      if ($card['type'] == SPADE || ($card['type'] == HEART && $card['type_arg'] == 13)) {
-        return true;
-      }
-    }
+  function gameStat(): string {
+    return POINTS_FROM_SPADES;
+  }
 
+  function remainingPoints(array $player_ids, array $won_cards): bool {
+    $player_to_points = $this->score($player_ids, $won_cards);
+
+    if (array_sum(array_values($player_to_points)) != $this->scoreTotal()) {
+      return true;
+    }
     return false;
   }
 
@@ -31,5 +34,9 @@ class GLTSpadesScorer implements GLTScorer {
     }
 
     return $player_to_points;
+  }
+
+  function scoreTotal(): int {
+    return 30;
   }
 }

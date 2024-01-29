@@ -104,9 +104,6 @@ function (dojo, declare) {
             }
 
             document.getElementById('dealer_p' + this.gamedatas.dealer).classList.add('show_dealer');
-            if (this.gamedatas.selected_game) {
-                document.getElementById('dealer_p' + this.gamedatas.dealer).innerHTML = this.gamedatas.selected_game;
-            }
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
@@ -192,9 +189,13 @@ function (dojo, declare) {
                 switch( stateName )
                 {
                     case 'dominoesPlayerTurn':
-                        if (args.passable) {
+                        console.log(args);
+                        if (args.must_pass) {
                             this.addActionButton('btnPass', _('Pass'), 'onBtnPass');
-                        } else if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
+                        } else {
+                            if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');
+                            if (args.ace_played) this.addActionButton('btnPass', _('Pass'), 'onBtnPass');
+                        }
                         break;
                     case 'playerTurn':
                         if (this.prefs[100].value == 1) this.addActionButton('btnPlayCard', _('Play card'), 'onBtnPlayCard');

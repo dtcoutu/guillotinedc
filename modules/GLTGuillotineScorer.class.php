@@ -4,8 +4,12 @@ require_once('GLTScorer.interface.php');
 require_once('constants.inc.php');
 
 class GLTGuillotineScorer implements GLTScorer {
-  function remainingPoints(array $cards_in_hands): bool {
-    if (count($cards_in_hands) > 0) {
+  function gameStat(): string {
+    return POINTS_FROM_GUILLOTINE;
+  }
+
+  function remainingPoints(array $player_ids, array $won_cards): bool {
+    if (count($won_cards) < 32) {
       return true;
     }
     return false;
@@ -37,5 +41,9 @@ class GLTGuillotineScorer implements GLTScorer {
     }
 
     return $player_to_points;
+  }
+
+  function scoreTotal(): int {
+    return 100;
   }
 }

@@ -113,7 +113,15 @@ $machinestates = [
         "description" => "",
         "type" => "game",
         "action" => "stEndHand",
-        "transitions" => ["nextHand" => 2]
+        "transitions" => ["nextHand" => 31]
+    ],
+
+    31 => [
+        "name" => "checkEndGame",
+        "description" => "",
+        "type" => "game",
+        "action" => "stCheckEndGame",
+        "transitions" => ["newHand" => 2, "endGame" => 99]
     ],
 
     41 => [
@@ -139,7 +147,7 @@ $machinestates = [
         "description" => "",
         "type" => "game",
         "action" => "stDominoesEndHand",
-        "transitions" => ["nextHand" => 2]
+        "transitions" => ["nextHand" => 31]
     ],
    
     // Final state.

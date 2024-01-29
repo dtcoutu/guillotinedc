@@ -1,0 +1,54 @@
+{
+  "player": {
+    "points_from_parliament": {
+      "id": 11,
+      "name": "Points from Parliament",
+      "type": "int"
+    },
+    "points_from_spades": {
+      "id": 12,
+      "name": "Points from Spades",
+      "type": "int"
+    },
+    "points_from_queens": {
+      "id": 13,
+      "name": "Points from Queens",
+      "type": "int"
+    },
+    "points_from_royalty": {
+      "id": 14,
+      "name": "Points from Royalty",
+      "type": "int"
+    },
+    "points_from_dominoes": {
+      "id": 15,
+      "name": "Points from Domnioes",
+      "type": "int"
+    },
+    "points_from_guillotine": {
+      "id": 16,
+      "name": "Points from Guillotine",
+      "type": "int"
+    },
+    "points_on_own_calls": {
+      "id": 17,
+      "name": "Points on own calls",
+      "type": "int"
+    },
+    "points_on_player_1_calls": {
+      "id": 18,
+      "name": "Points from player to the left calls",
+      "type": "int"
+    },
+    "points_on_player_2_calls": {
+      "id": 19,
+      "name": "Points from second player to the left calls",
+      "type": "int"
+    },
+    "points_on_player_3_calls": {
+      "id": 20,
+      "name": "Points from player to the right calls",
+      "type": "int"
+    }
+  }
+}
